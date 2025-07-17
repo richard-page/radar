@@ -2,7 +2,8 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrazok</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -63,6 +64,7 @@
       z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
+      text-align: center;
     }
     #attribution {
       position: fixed;
@@ -82,6 +84,27 @@
     }
     #attribution a:hover {
       text-decoration: underline;
+    }
+
+    /* ✅ Responzivita pre mobily */
+    @media (max-width: 600px) {
+      #controls {
+        bottom: 80px;
+        padding: 8px 12px;
+        gap: 8px;
+      }
+      #controls button {
+        width: 40px;
+        height: 40px;
+      }
+      #controls img {
+        width: 18px;
+        height: 18px;
+      }
+      #timeBox {
+        font-size: 16px;
+        padding: 6px 14px;
+      }
     }
   </style>
 </head>
@@ -146,18 +169,27 @@
       .then(r => r.json())
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
-        // ✅ vždy posledný REÁLNY snímok (posledný z past)
         currentIndex = data.radar.past.length - 1;
 
-        radarFrames.forEach((frame, i) => {
-          const layer = L.tileLayer(
-            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0}
-          ).addTo(map);
-          radarLayers[i] = layer;
-        });
+        // ✅ Rýchlejšie načítanie: najprv pridáme posledný snímok
+        const lastFrame = radarFrames[currentIndex];
+        const lastLayer = L.tileLayer(
+          `https://tilecache.rainviewer.com/v2/radar/${lastFrame.path}/256/{z}/{x}/{y}/4/1_1.png`,
+          {opacity: 0.8, crossOrigin: true, updateWhenIdle: true}
+        ).addTo(map);
+        radarLayers[currentIndex] = lastLayer;
+        timeBox.textContent = formatDate(lastFrame.time);
 
-        fadeToFrame(currentIndex);
+        // ✅ Na pozadí dotiahneme zvyšok
+        radarFrames.forEach((frame, i) => {
+          if (i !== currentIndex) {
+            const layer = L.tileLayer(
+              `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
+              {opacity: 0, crossOrigin: true, updateWhenIdle: true}
+            ).addTo(map);
+            radarLayers[i] = layer;
+          }
+        });
       });
   }
 
