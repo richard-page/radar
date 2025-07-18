@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok – Mobil optimalizovaný</title>
+  <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -142,11 +142,12 @@
       map.fitBounds(geo.getBounds().pad(padValue));
     });
 
+  // ✅ Radarové snímky – optimalizované
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayer = null; // ✅ iba jedna vrstva
+  let radarLayer = null;
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -157,7 +158,6 @@
   function showFrame(index) {
     if (!radarFrames[index]) return;
     const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
-
     if (radarLayer) {
       radarLayer.setUrl(url);
     } else {
@@ -169,12 +169,11 @@
   function loadRadar() {
     if (radarLayer) map.removeLayer(radarLayer);
     radarLayer = null;
-
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(r => r.json())
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
-        currentIndex = data.radar.past.length - 1; // posledný reálny snímok
+        currentIndex = data.radar.past.length - 1;
         showFrame(currentIndex);
       });
   }
@@ -186,12 +185,10 @@
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     showFrame(currentIndex);
   };
-
   document.getElementById("next").onclick = () => {
     currentIndex = (currentIndex + 1) % radarFrames.length;
     showFrame(currentIndex);
   };
-
   document.getElementById("play").onclick = () => {
     if (playInterval) {
       clearInterval(playInterval);
@@ -201,12 +198,32 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 400); // ✅ pomalšie = plynulejšie
+      }, 400);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
-
   document.getElementById("refresh").onclick = () => loadRadar();
+
+  // ✅ Poloha používateľa (📍)
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const userMarker = L.circleMarker([latitude, longitude], {
+          radius: 7,
+          color: "#00ffea",
+          fillColor: "#00ffea",
+          fillOpacity: 1
+        }).addTo(map);
+        userMarker.bindPopup("📍 Vaša poloha").openPopup();
+      },
+      (err) => {
+        console.warn("Poloha nebola povolená: ", err.message);
+      }
+    );
+  } else {
+    console.warn("Prehliadač nepodporuje geolokáciu.");
+  }
 </script>
 </body>
 </html>
