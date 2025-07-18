@@ -5,7 +5,7 @@
   <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#000}
+    html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#111}
     #controls {
       position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
       background:#072C4E;padding:8px 14px;border-radius:20px;
@@ -26,9 +26,9 @@
       color:#ccc;padding:2px 5px;font:10px Arial,sans-serif;z-index:9999
     }
     #attribution a {color:#66b3ff;text-decoration:none}
-    .city-label {color:#fff;font:11px Arial,sans-serif;text-shadow:1px 1px 1px #000}
-    .leaflet-container {background:#000}
-    .leaflet-tile {background:#000}
+    .city-label {color:#fff;font:11px Arial,sans-serif;text-shadow:1px 1px 2px #000}
+    .leaflet-container {background:#111}
+    .leaflet-tile {background:#111}
   </style>
 </head>
 <body>
@@ -47,6 +47,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const MAP_BOUNDS=[[46.9,15.8],[49.8,23.0]]
+  const savedPos=JSON.parse(localStorage.getItem("mapPos"))||null
   const map=L.map('map',{
     maxBounds:MAP_BOUNDS,
     maxBoundsViscosity:1,
@@ -55,13 +56,10 @@
     maxZoom:12,
     preferCanvas:true,
     zoomAnimation:true
-  }).fitBounds(MAP_BOUNDS)
+  })
+  if(savedPos){map.setView(savedPos.center,savedPos.zoom)}else{map.fitBounds(MAP_BOUNDS)}
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',
-    maxZoom:12,
-    minZoom:6,
-    noWrap:true,
-    detectRetina:true
+    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true,detectRetina:true
   }).addTo(map)
   fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
     L.geoJSON(d,{style:{color:"#00bfff",weight:1,fillOpacity:0}}).addTo(map)
@@ -70,7 +68,7 @@
     .then(r=>r.json()).then(data=>{
       data.elements.forEach(e=>{
         if(e.lat&&e.lon&&e.tags&&e.tags.name){
-          L.circleMarker([e.lat,e.lon],{radius:2,color:"#fff",fillColor:"#fff",fillOpacity:1})
+          L.circleMarker([e.lat,e.lon],{radius:2.5,color:"#fff",fillColor:"#fff",fillOpacity:1})
             .addTo(map)
             .bindTooltip(e.tags.name,{permanent:true,direction:"right",className:"city-label"})
         }
@@ -85,11 +83,13 @@
   function fadeToFrame(i){
     radarLayers.forEach((l,x)=>l.setOpacity(x===i?0.8:0))
     timeBox.textContent=formatDate(radarFrames[i].time)
+    localStorage.setItem("currentFrame",i)
   }
   function loadRadar(){
     radarLayers.forEach(l=>map.removeLayer(l));radarLayers=[]
     fetch("https://api.rainviewer.com/public/weather-maps.json").then(r=>r.json()).then(d=>{
-      radarFrames=d.radar.past.concat(d.radar.nowcast);currentIndex=d.radar.past.length-1
+      radarFrames=d.radar.past.concat(d.radar.nowcast)
+      currentIndex=localStorage.getItem("currentFrame")?parseInt(localStorage.getItem("currentFrame")):d.radar.past.length-1
       radarFrames.forEach((f,i)=>{
         const layer=L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/4/1_1.png`,
         {opacity:0,noWrap:true}).addTo(map);radarLayers[i]=layer})
@@ -104,6 +104,9 @@
       playIcon.src="https://img.icons8.com/ios-filled/50/pause.png"}
   }
   refresh.onclick=()=>loadRadar()
+  map.on("moveend zoomend",()=>{
+    localStorage.setItem("mapPos",JSON.stringify({center:map.getCenter(),zoom:map.getZoom()}))
+  })
 </script>
 </body>
 </html>
