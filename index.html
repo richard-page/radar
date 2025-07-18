@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko + 80 km</title>
+  <title>Radar zrážok – Slovensko + 50 km okruh</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,10 +103,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Slovensko + 80 km na všetky strany
+  // ✅ Slovensko + 50 km na všetky strany
   const MAP_BOUNDS = [
-    [46.3, 15.0],  // juhozápad
-    [50.4, 23.5]   // severovýchod
+    [46.7, 15.5],  // juhozápad
+    [50.0, 23.0]   // severovýchod
   ];
 
   const map = L.map('map', {
@@ -116,8 +116,8 @@
     maxBoundsViscosity: 1.0,
     noWrap: true,
     minZoom: 7,
-    maxZoom: 11, // ✅ max 11 kvôli výkonu
-    keepBuffer: 0 // ✅ neukladá zbytočné dlaždice mimo obrazu
+    maxZoom: 11,
+    keepBuffer: 0
   }).fitBounds(MAP_BOUNDS);
 
   // ✅ Podkladová mapa
@@ -129,9 +129,9 @@
     keepBuffer: 0
   }).addTo(map);
 
-  // ✅ ŠTVOREC ukazujúci hranice zobrazenia zrážok
+  // ✅ ŠTVOREC (sivý)
   L.rectangle(MAP_BOUNDS, {
-    color: "#ff6600",
+    color: "#888888",
     weight: 2,
     fillOpacity: 0
   }).addTo(map);
