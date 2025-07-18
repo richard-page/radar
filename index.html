@@ -138,7 +138,7 @@
     maxZoom: 14
   }).addTo(map);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
     pane: 'overlayPane',
@@ -166,6 +166,7 @@
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
   let radarLayer = null;
+  let reloadTimeout = null;
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -183,7 +184,6 @@
         opacity: 0.8,
         crossOrigin: true,
         updateWhenIdle: true,
-        updateInterval: 300,
         keepBuffer: 6,
         tileSize: 256
       }).addTo(map);
@@ -234,6 +234,15 @@
   map.on("moveend", () => {
     const center = map.getCenter();
     localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
+    if (!radarLayer) return;
+    clearTimeout(reloadTimeout);
+    reloadTimeout = setTimeout(() => {
+      showFrame(currentIndex);
+    }, 300);
+  });
+
+  map.on("movestart", () => {
+    if (radarLayer) radarLayer.setOpacity(0);
   });
 </script>
 </body>
