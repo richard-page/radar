@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko</title>
+  <title>Radar zrážok – Slovensko (orezané)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,15 +103,14 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Mapa obmedzená na okolie Slovenska
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
     maxBounds: [
-      [47.0, 15.8],  // juhozápadný roh (Rakúsko – Maďarsko)
-      [49.8, 22.8]   // severovýchodný roh (Poľsko – Ukrajina)
+      [47.0, 16.0],
+      [49.7, 22.6]
     ],
-    maxBoundsViscosity: 1.0 // nedovolí posun mimo rozsah
+    maxBoundsViscosity: 1.0
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -119,21 +118,13 @@
     maxZoom: 10
   }).addTo(map);
 
-  // ✅ Hranice Slovenska
-  fetch("slovakia_Regions_level_1.geojson")
-    .then(r => r.json())
-    .then(data => {
-      const geo = L.geoJSON(data, {
-        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
-      }).addTo(map);
-      map.fitBounds(geo.getBounds().pad(0.05));
-    });
-
   let radarFrames = [];
   let radarLayers = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
+
+  let slovakiaMask; // sem uložíme GeoJSON masku
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -162,7 +153,17 @@
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
             {opacity: 0}
-          ).addTo(map);
+          );
+          // ✅ pridáme maskovanie len na Slovensko
+          layer.on('tileload', function(e) {
+            const ctx = e.tile.getContext('2d');
+            if (slovakiaMask) {
+              ctx.globalCompositeOperation = 'destination-in';
+              ctx.drawImage(slovakiaMask, 0, 0, 256, 256);
+              ctx.globalCompositeOperation = 'source-over';
+            }
+          });
+          layer.addTo(map);
           radarLayers[i] = layer;
         });
 
@@ -170,7 +171,16 @@
       });
   }
 
-  // ✅ Načítanie pri spustení
+  // ✅ načítanie masky (GeoJSON)
+  fetch("slovakia_Regions_level_1.geojson")
+    .then(r => r.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
+      }).addTo(map);
+      map.fitBounds(L.geoJSON(data).getBounds().pad(0.05));
+    });
+
   loadRadar();
 
   // ✅ Ovládanie
