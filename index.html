@@ -165,7 +165,6 @@
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
   let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
-  let reloadTimeout = null;
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -221,18 +220,6 @@
   map.on("moveend", () => {
     const center = map.getCenter();
     localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
-  });
-
-  map.on("movestart", () => {
-    if (radarLayer) radarLayer.setOpacity(0.5);
-  });
-
-  map.on("moveend", () => {
-    clearTimeout(reloadTimeout);
-    reloadTimeout = setTimeout(() => {
-      if (radarLayer) radarLayer.setOpacity(0.8);
-      showFrame(currentIndex);
-    }, 300);
   });
 </script>
 </body>
