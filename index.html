@@ -131,7 +131,7 @@
     zoomControl: false,
     attributionControl: false,
     inertia: true,
-    inertiaDeceleration: 2500,
+    inertiaDeceleration: 3000,
     zoomAnimation: true,
     fadeAnimation: false
   });
@@ -139,7 +139,7 @@
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 18,
-    keepBuffer: 8,
+    keepBuffer: 10,
     updateWhenZooming: false,
     updateWhenIdle: true
   }).addTo(map);
@@ -174,7 +174,7 @@
   const timeBox = document.getElementById("timeBox");
   let radarLayer = L.tileLayer('', {
     opacity: 0.8,
-    keepBuffer: 8,
+    keepBuffer: 10,
     updateWhenZooming: false,
     updateWhenIdle: true
   }).addTo(map);
@@ -223,7 +223,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 1000);
+      }, 1200);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
