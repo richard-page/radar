@@ -108,24 +108,29 @@
     attributionControl: false,
     preferCanvas: true,
     minZoom: 5,
-    maxZoom: 14
+    maxZoom: 14,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 12,
+    inertia: true
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    keepBuffer: 12,
+    keepBuffer: 16,
     unloadInvisibleTiles: false,
-    updateWhenZooming: false,
-    updateWhenIdle: true
+    updateWhenZooming: true,
+    updateWhenIdle: false,
+    updateWhenDragging: true
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
     opacity: 0.9,
-    keepBuffer: 12,
-    unloadInvisibleTiles: false
+    keepBuffer: 16,
+    unloadInvisibleTiles: false,
+    updateWhenDragging: true
   }).addTo(map);
 
   fetch("slovakia_Regions_level_1.geojson")
@@ -170,10 +175,11 @@
             {
               opacity: 0,
               crossOrigin: true,
-              keepBuffer: 12,
+              keepBuffer: 16,
               unloadInvisibleTiles: false,
-              updateWhenZooming: false,
-              updateWhenIdle: true
+              updateWhenDragging: true,
+              updateWhenZooming: true,
+              updateWhenIdle: false
             }
           ).addTo(map);
           radarLayers.push(layer);
