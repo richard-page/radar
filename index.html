@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok + Poloha (vždy funkčná)</title>
+  <title>Radar zrážok + Poloha (presná)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -207,47 +207,33 @@
   };
   document.getElementById("refresh").onclick = () => loadRadar();
 
-  // ✅ Poloha (GPS + fallback IP)
+  // ✅ Poloha – len presná cez prehliadač
   let userMarker = null;
-  function showUser(lat, lon, zoom = true) {
-    if (userMarker) map.removeLayer(userMarker);
-    userMarker = L.circleMarker([lat, lon], {
-      radius: 7,
-      color: "#00ffea",
-      fillColor: "#00ffea",
-      fillOpacity: 1
-    }).addTo(map);
-    userMarker.bindPopup("📍 Vaša poloha").openPopup();
-    if (zoom) map.setView([lat, lon], 10);
-  }
-
   function locateUser() {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          showUser(pos.coords.latitude, pos.coords.longitude, true);
+          const { latitude, longitude } = pos.coords;
+          if (userMarker) map.removeLayer(userMarker);
+          userMarker = L.circleMarker([latitude, longitude], {
+            radius: 7,
+            color: "#00ffea",
+            fillColor: "#00ffea",
+            fillOpacity: 1
+          }).addTo(map);
+          userMarker.bindPopup("📍 Vaša poloha").openPopup();
+          map.setView([latitude, longitude], 10);
         },
-        () => {
-          // Fallback cez IP
-          fetch("https://ipapi.co/json/")
-            .then(res => res.json())
-            .then(data => {
-              showUser(data.latitude, data.longitude, true);
-            });
+        (err) => {
+          alert("Poloha nebola povolená: " + err.message);
         },
-        { enableHighAccuracy: true, timeout: 4000 }
+        { enableHighAccuracy: true, timeout: 5000 }
       );
     } else {
-      // Starý prehliadač – rovno IP fallback
-      fetch("https://ipapi.co/json/")
-        .then(res => res.json())
-        .then(data => {
-          showUser(data.latitude, data.longitude, true);
-        });
+      alert("Váš prehliadač nepodporuje geolokáciu.");
     }
   }
 
-  // ✅ Automaticky pri načítaní
   locateUser();
   document.getElementById("locate").onclick = () => locateUser();
 </script>
