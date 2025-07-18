@@ -3,53 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar zrážok – Naživo</title>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=5"/>
+  <title>Radar zrážok</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#1b1b1b;}
-    .leaflet-control-zoom,.leaflet-control-attribution{display:none;}
-
-    #liveLabel {
-      position:fixed;top:8px;left:50%;transform:translateX(-50%);
-      background:#FF0000;color:white;font-weight:bold;
-      padding:4px 14px;border-radius:15px;
-      font-family:Arial,sans-serif;font-size:16px;
-      box-shadow:0 0 6px rgba(0,0,0,0.5);z-index:10000;
-      text-transform:uppercase;letter-spacing:1px;
+    html, body, #map {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
     }
-
+    .leaflet-control-zoom,
+    .leaflet-control-attribution {
+      display: none;
+    }
     #controls {
-      position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
-      background:#072C4E;padding:10px 16px;border-radius:25px;
-      display:flex;align-items:center;gap:12px;z-index:9999;
-      box-shadow:0 0 10px rgba(0,0,0,0.5);
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #072C4E;
+      padding: 10px 16px;
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9999;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
     #controls button {
-      background:#0D3F73;border:none;width:45px;height:45px;border-radius:50%;
-      cursor:pointer;display:flex;justify-content:center;align-items:center;
+      background: #0D3F73;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    #controls img {width:22px;height:22px;filter:invert(1);}
+    #controls button:hover {
+      background: #155A9C;
+    }
+    #controls img {
+      width: 22px;
+      height: 22px;
+      filter: invert(1);
+    }
     #timeBox {
-      position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-      background:#072C4E;color:white;padding:8px 20px;border-radius:15px;
-      font-size:22px;font-weight:bold;z-index:9999;
-      box-shadow:0 0 10px rgba(0,0,0,0.5);font-family:Arial,sans-serif;
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #072C4E;
+      color: white;
+      padding: 8px 20px;
+      border-radius: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      font-family: Arial, sans-serif;
     }
     #attribution {
-      position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.6);color:#ccc;
-      padding:2px 6px;border-top-left-radius:5px;font-size:11px;
-      font-family:Arial,sans-serif;z-index:9999;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #ccc;
+      padding: 2px 6px;
+      border-top-left-radius: 5px;
+      font-size: 11px;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
     }
-    #attribution a {color:#66b3ff;text-decoration:none;}
+    #attribution a {
+      color: #66b3ff;
+      text-decoration: none;
+    }
+    #attribution a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 <div id="map"></div>
-
-<div id="liveLabel">NAŽIVO</div>
 
 <div id="controls">
   <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
@@ -64,64 +102,82 @@
   <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=5"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const savedPos=JSON.parse(localStorage.getItem("mapPos"))||null;
-  const map=L.map('map',{
-    zoomControl:false,attributionControl:false,preferCanvas:true,
-    inertia:true,inertiaDeceleration:4500,zoomAnimation:true
+  const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
+
+  const map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false,
+    inertia: true,
+    inertiaDeceleration: 3000, 
+    zoomAnimation: true,
+    fadeAnimation: true,
+    markerZoomAnimation: true
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?v=5',{
-    subdomains:'abcd',maxZoom:12,keepBuffer:6,
-    updateWhenZooming:true,updateWhenIdle:false,reuseTiles:true
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 12,
+    keepBuffer: 6,
+    updateWhenZooming: true,
+    updateWhenIdle: false
   }).addTo(map);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?v=5',{
-    subdomains:'abcd',opacity:1,maxZoom:12,zIndex:999
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 12,
+    zIndex: 999
   }).addTo(map);
 
-  if(savedPos){map.setView([savedPos.lat,savedPos.lng],savedPos.zoom);}
-  else{map.setView([48.7,19.7],7);}
-
-  function loadGeoJSON(retry=0){
-    fetch("slovakia_Regions_level_1.geojson?v=5")
-      .then(r=>r.json())
-      .then(data=>{
-        L.geoJSON(data,{style:{color:"#00bfff",weight:1,fillOpacity:0},interactive:false}).addTo(map);
-      })
-      .catch(()=>{if(retry<3)setTimeout(()=>loadGeoJSON(retry+1),1000);});
-  }
-  map.whenReady(()=>loadGeoJSON());
-
-  let radarFrames=[],radarLayers=[],currentIndex=0,playInterval=null;
-  const timeBox=document.getElementById("timeBox");
-
-  function formatDate(t){
-    const d=new Date(t*1000);
-    const days=["NE","PO","UT","ST","ŠT","PI","SO"];
-    return `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} o ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  if (savedPos) {
+    map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
   }
 
-  function fadeToFrame(i){
-    radarLayers.forEach((l,x)=>l.setOpacity(x===i?0.8:0));
-    timeBox.textContent=formatDate(radarFrames[i].time);
+  fetch("slovakia_Regions_level_1.geojson")
+    .then(r => r.json())
+    .then(data => {
+      const geo = L.geoJSON(data, {
+        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
+      }).addTo(map);
+      if (!savedPos) {
+        map.fitBounds(geo.getBounds().pad(0.25));
+      }
+    });
+
+  let radarFrames = [];
+  let radarLayers = [];
+  let currentIndex = 0;
+  let playInterval = null;
+  const timeBox = document.getElementById("timeBox");
+
+  function formatDate(timestamp) {
+    const date = new Date(timestamp * 1000);
+    const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
+    return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} o ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 
-  function loadRadar(){
-    radarLayers.forEach(l=>map.removeLayer(l));
-    radarLayers=[];
-    fetch("https://api.rainviewer.com/public/weather-maps.json?v=5")
-      .then(r=>r.json())
-      .then(d=>{
-        radarFrames=d.radar.past.concat(d.radar.nowcast);
-        currentIndex=d.radar.past.length-1;
-        radarFrames.forEach(fr=>{
-          const lay=L.tileLayer(
-            `https://tilecache.rainviewer.com/v2/radar/${fr.path}/256/{z}/{x}/{y}/4/1_1.png?v=5`,
-            {opacity:0,zIndex:500,updateWhenIdle:false,keepBuffer:6,reuseTiles:true,maxZoom:12}
+  function fadeToFrame(index) {
+    radarLayers.forEach((layer, i) => {
+      layer.setOpacity(i === index ? 0.8 : 0);
+    });
+    timeBox.textContent = formatDate(radarFrames[index].time);
+  }
+
+  function loadRadar() {
+    radarLayers.forEach(layer => map.removeLayer(layer));
+    radarLayers = [];
+    fetch("https://api.rainviewer.com/public/weather-maps.json")
+      .then(r => r.json())
+      .then(data => {
+        radarFrames = data.radar.past.concat(data.radar.nowcast);
+        currentIndex = data.radar.past.length - 1;
+        radarFrames.forEach((frame, i) => {
+          const layer = L.tileLayer(
+            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
+            {opacity: 0, keepBuffer: 6, updateWhenZooming: true}
           ).addTo(map);
-          radarLayers.push(lay);
+          radarLayers[i] = layer;
         });
         fadeToFrame(currentIndex);
       });
@@ -129,31 +185,35 @@
 
   loadRadar();
 
-  document.getElementById("back").onclick=()=>{
-    currentIndex=(currentIndex-1+radarFrames.length)%radarFrames.length;
+  document.getElementById("back").onclick = () => {
+    currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
   };
-  document.getElementById("next").onclick=()=>{
-    currentIndex=(currentIndex+1)%radarFrames.length;
+
+  document.getElementById("next").onclick = () => {
+    currentIndex = (currentIndex + 1) % radarFrames.length;
     fadeToFrame(currentIndex);
   };
-  document.getElementById("play").onclick=()=>{
-    if(playInterval){
-      clearInterval(playInterval);playInterval=null;
-      document.getElementById("playIcon").src="https://img.icons8.com/ios-filled/50/play.png";
-    }else{
-      playInterval=setInterval(()=>{
-        currentIndex=(currentIndex+1)%radarFrames.length;
+
+  document.getElementById("play").onclick = () => {
+    if (playInterval) {
+      clearInterval(playInterval);
+      playInterval = null;
+      document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/play.png";
+    } else {
+      playInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % radarFrames.length;
         fadeToFrame(currentIndex);
-      },800);
-      document.getElementById("playIcon").src="https://img.icons8.com/ios-filled/50/pause.png";
+      }, 700);
+      document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
-  document.getElementById("refresh").onclick=()=>loadRadar();
 
-  map.on("moveend",()=>{
-    const c=map.getCenter();
-    localStorage.setItem("mapPos",JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));
+  document.getElementById("refresh").onclick = () => loadRadar();
+
+  map.on("moveend", () => {
+    const center = map.getCenter();
+    localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
   });
 </script>
 </body>
