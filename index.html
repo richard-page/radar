@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko a okolie</title>
+  <title>Radar zrážok – Slovensko (optimalizovaný rozsah)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -11,12 +11,6 @@
       margin: 0;
       padding: 0;
       background: #000;
-    }
-    .leaflet-control-zoom {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
     }
     .leaflet-control-attribution {
       display: none;
@@ -109,9 +103,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+  // ✅ Skrátený rozsah len pre Slovensko + tesné okolie (~100 km)
   const MAP_BOUNDS = [
-    [45.8, 14.8],  // juhozápad
-    [51.0, 24.5]   // severovýchod
+    [47.0, 16.0],  // juhozápad
+    [49.7, 22.5]   // severovýchod
   ];
 
   const map = L.map('map', {
@@ -120,15 +115,15 @@
     maxBounds: MAP_BOUNDS,
     maxBoundsViscosity: 1.0,
     noWrap: true,
-    minZoom: 6,  // ✅ najmenší zoom (celé okolie)
-    maxZoom: 9   // ✅ najväčší zoom (okresy)
+    minZoom: 7,  // ✅ kratší odzoom
+    maxZoom: 11  // ✅ väčší zoom na okresy
   }).fitBounds(MAP_BOUNDS);
 
   // ✅ Podkladová mapa
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 9,
-    minZoom: 6,
+    maxZoom: 11,
+    minZoom: 7,
     noWrap: true
   }).addTo(map);
 
