@@ -9,27 +9,36 @@
   <meta http-equiv="Expires" content="0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html, body, #map {
+    html, body {
       height: 100%;
       width: 100%;
       margin: 0;
       padding: 0;
       background: #1b1b1b;
     }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
     .leaflet-control-zoom, .leaflet-control-attribution {
       display: none;
     }
 
-    /* ✅ pevne viditeľné prvky */
-    #liveLabel, #controls, #timeBox, #attribution {
+    /* ✅ UI pevne mimo Leaflet */
+    #ui {
       position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
     }
-    #controls button {
+    #ui * {
       pointer-events: auto;
     }
 
     #liveLabel {
+      position: absolute;
       top: 8px;
       left: 50%;
       transform: translateX(-50%);
@@ -44,8 +53,8 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-
     #controls {
+      position: absolute;
       bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
@@ -73,8 +82,8 @@
       height: 22px;
       filter: invert(1);
     }
-
     #timeBox {
+      position: absolute;
       bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
@@ -87,8 +96,8 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
     }
-
     #attribution {
+      position: absolute;
       bottom: 0;
       right: 0;
       background: rgba(0,0,0,0.6);
@@ -107,19 +116,20 @@
 <body>
 <div id="map"></div>
 
-<div id="liveLabel">NAŽIVO</div>
-
-<div id="controls">
-  <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
-  <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
-  <button id="next"><img src="https://img.icons8.com/ios-filled/50/fast-forward.png"></button>
-  <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
-</div>
-<div id="timeBox">Načítavam čas...</div>
-
-<div id="attribution">
-  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &
-  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
+<!-- ✅ UI je mimo mapy -->
+<div id="ui">
+  <div id="liveLabel">NAŽIVO</div>
+  <div id="controls">
+    <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
+    <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
+    <button id="next"><img src="https://img.icons8.com/ios-filled/50/fast-forward.png"></button>
+    <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
+  </div>
+  <div id="timeBox">Načítavam čas...</div>
+  <div id="attribution">
+    Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &
+    <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
