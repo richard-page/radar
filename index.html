@@ -7,6 +7,25 @@
   <style>
     html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#1b1b1b;}
     .leaflet-control-zoom,.leaflet-control-attribution{display:none;}
+
+    #searchBox {
+      position:fixed;top:15px;left:50%;transform:translateX(-50%);
+      background:#072C4E;padding:6px 10px;border-radius:20px;
+      display:flex;align-items:center;gap:6px;z-index:9999;
+      box-shadow:0 0 8px rgba(0,0,0,0.5);
+    }
+    #searchBox input {
+      border:none;outline:none;background:white;color:#000;
+      padding:5px 10px;border-radius:15px;width:180px;
+      font-size:14px;
+    }
+    #searchBox button {
+      background:#0D3F73;color:white;border:none;
+      padding:5px 12px;border-radius:15px;cursor:pointer;
+      font-size:14px;transition:background 0.2s;
+    }
+    #searchBox button:hover {background:#155A9C;}
+
     #controls {
       position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
       background:#072C4E;padding:10px 16px;border-radius:25px;
@@ -34,6 +53,11 @@
 </head>
 <body>
 <div id="map"></div>
+
+<div id="searchBox">
+  <input type="text" id="cityInput" placeholder="Zadaj mesto...">
+  <button id="searchBtn">Nájsť</button>
+</div>
 
 <div id="controls">
   <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
@@ -75,9 +99,7 @@
       .then(data=>{
         L.geoJSON(data,{style:{color:"#00bfff",weight:1,fillOpacity:0},interactive:false}).addTo(map);
       })
-      .catch(()=>{
-        if(retry<3)setTimeout(()=>loadGeoJSON(retry+1),1000);
-      });
+      .catch(()=>{if(retry<3)setTimeout(()=>loadGeoJSON(retry+1),1000);});
   }
   map.whenReady(()=>loadGeoJSON());
 
@@ -104,7 +126,8 @@
         radarFrames=d.radar.past.concat(d.radar.nowcast);
         currentIndex=d.radar.past.length-1;
         radarFrames.forEach(fr=>{
-          const lay=L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${fr.path}/256/{z}/{x}/{y}/4/1_1.png`,
+          const lay=L.tileLayer(
+            `https://tilecache.rainviewer.com/v2/radar/${fr.path}/256/{z}/{x}/{y}/4/1_1.png`,
             {opacity:0,zIndex:500,updateWhenIdle:false,keepBuffer:6,reuseTiles:true}
           ).addTo(map);
           radarLayers.push(lay);
@@ -141,6 +164,23 @@
     const c=map.getCenter();
     localStorage.setItem("mapPos",JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));
   });
+
+  // ✅ Vyhľadávanie mesta
+  document.getElementById("searchBtn").onclick=()=>{
+    const city=document.getElementById("cityInput").value.trim();
+    if(!city)return;
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`)
+      .then(r=>r.json())
+      .then(data=>{
+        if(data && data.length>0){
+          const lat=+data[0].lat,lng=+data[0].lon;
+          map.setView([lat,lng],10);
+        }else{
+          alert("Mesto sa nenašlo.");
+        }
+      })
+      .catch(()=>alert("Chyba pri vyhľadávaní."));
+  };
 </script>
 </body>
 </html>
