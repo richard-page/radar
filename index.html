@@ -7,25 +7,26 @@
   <style>
     html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#111}
     #controls {
-      position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-      background:#072C4E;padding:8px 14px;border-radius:20px;
-      display:flex;gap:8px;z-index:9999
+      position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+      background:#072C4E;padding:6px 12px;border-radius:16px;
+      display:flex;gap:6px;z-index:9999
     }
     #controls button {
-      background:#0D3F73;border:none;width:40px;height:40px;
+      background:#0D3F73;border:none;width:36px;height:36px;
       border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center
     }
-    #controls img {width:20px;height:20px;filter:invert(1)}
+    #controls img {width:18px;height:18px;filter:invert(1)}
     #timeBox {
-      position:fixed;bottom:25px;left:50%;transform:translateX(-50%);
-      background:#072C4E;color:#fff;padding:5px 15px;border-radius:12px;
-      font:16px Arial,sans-serif;z-index:9999
+      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:#072C4E;color:#fff;padding:4px 12px;border-radius:10px;
+      font:15px Arial,sans-serif;z-index:9999
     }
     #attribution {
       position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.6);
       color:#ccc;padding:2px 5px;font:10px Arial,sans-serif;z-index:9999
     }
     #attribution a {color:#66b3ff;text-decoration:none}
+    .leaflet-control-attribution, .leaflet-control {display:none !important}
   </style>
 </head>
 <body>
@@ -49,11 +50,12 @@
     maxBoundsViscosity:1,
     noWrap:true,
     minZoom:6,
-    maxZoom:12
+    maxZoom:12,
+    attributionControl:false
   }).fitBounds(MAP_BOUNDS)
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true
+    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true,attribution:false
   }).addTo(map)
 
   fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
