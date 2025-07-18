@@ -129,12 +129,23 @@
   const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
   const map = L.map('map', {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    inertia: true,
+    inertiaDeceleration: 2500,
+    zoomAnimation: true,
+    fadeAnimation: false
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 18
+  }).addTo(map);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 18,
+    opacity: 0.9,
+    zIndex: 999
   }).addTo(map);
 
   if (savedPos) {
@@ -193,7 +204,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 700);
+      }, 900);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
