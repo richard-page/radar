@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
@@ -11,6 +11,7 @@
       width: 100%;
       margin: 0;
       padding: 0;
+      overflow: hidden;
     }
     .leaflet-control-zoom,
     .leaflet-control-attribution {
@@ -18,15 +19,15 @@
     }
     #controls {
       position: fixed;
-      bottom: 100px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
-      background: #072C4E;
+      background: rgba(7,44,78,0.9);
       padding: 10px 16px;
       border-radius: 25px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
@@ -52,14 +53,14 @@
     }
     #timeBox {
       position: fixed;
-      bottom: 30px;
+      bottom: 25px;
       left: 50%;
       transform: translateX(-50%);
-      background: #072C4E;
+      background: rgba(7,44,78,0.9);
       color: white;
       padding: 8px 20px;
-      border-radius: 15px;
-      font-size: 22px;
+      border-radius: 12px;
+      font-size: 18px;
       font-weight: bold;
       z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
@@ -109,25 +110,23 @@
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
+    preferCanvas: true,
     inertia: true,
-    inertiaDeceleration: 3000, 
-    zoomAnimation: true,
-    fadeAnimation: true,
-    markerZoomAnimation: true
+    inertiaDeceleration: 3000
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 12,
-    keepBuffer: 6,
-    updateWhenZooming: true,
-    updateWhenIdle: false
+    maxZoom: 14,
+    updateWhenZooming: false,
+    keepBuffer: 8
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 12,
-    zIndex: 999
+    maxZoom: 14,
+    opacity: 0.8,
+    pane: 'overlayPane'
   }).addTo(map);
 
   if (savedPos) {
@@ -175,7 +174,7 @@
         radarFrames.forEach((frame, i) => {
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0, keepBuffer: 6, updateWhenZooming: true}
+            {opacity: 0, updateWhenZooming: false, keepBuffer: 8}
           ).addTo(map);
           radarLayers[i] = layer;
         });
@@ -204,7 +203,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         fadeToFrame(currentIndex);
-      }, 700);
+      }, 800);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
