@@ -109,21 +109,23 @@
     attributionControl: false,
     preferCanvas: false,
     fadeAnimation: false,
-    zoomAnimation: false
+    zoomAnimation: true
   });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    keepBuffer: 8,
+    keepBuffer: 12,
     reuseTiles: true,
     updateWhenZooming: false,
-    updateWhenIdle: true
+    updateWhenIdle: false
   }).addTo(map);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
     opacity: 0.8,
-    zIndex: 999
+    zIndex: 999,
+    keepBuffer: 12,
+    reuseTiles: true
   }).addTo(map);
   if (savedPos) {
     map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
@@ -134,7 +136,7 @@
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayer = L.tileLayer('', {opacity: 0.8, reuseTiles: true, keepBuffer: 8}).addTo(map);
+  let radarLayer = L.tileLayer('', {opacity: 0.8, reuseTiles: true, keepBuffer: 12}).addTo(map);
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
     const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
@@ -173,7 +175,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 800);
+      }, 1200);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
