@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok</title>
+  <title>Radar zrážok + Poloha</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -43,6 +43,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      font-size: 22px;
+      color: white;
     }
     #controls button:hover {
       background: #155A9C;
@@ -95,6 +97,7 @@
       #controls button {
         width: 44px;
         height: 44px;
+        font-size: 18px;
       }
       #controls img {
         width: 20px;
@@ -115,6 +118,7 @@
   <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
   <button id="next"><img src="https://img.icons8.com/ios-filled/50/fast-forward.png"></button>
   <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
+  <button id="locate">📍</button>
 </div>
 <div id="timeBox">Načítavam čas...</div>
 
@@ -204,26 +208,34 @@
   };
   document.getElementById("refresh").onclick = () => loadRadar();
 
-  // ✅ Poloha používateľa (📍)
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const userMarker = L.circleMarker([latitude, longitude], {
-          radius: 7,
-          color: "#00ffea",
-          fillColor: "#00ffea",
-          fillOpacity: 1
-        }).addTo(map);
-        userMarker.bindPopup("📍 Vaša poloha").openPopup();
-      },
-      (err) => {
-        console.warn("Poloha nebola povolená: ", err.message);
-      }
-    );
-  } else {
-    console.warn("Prehliadač nepodporuje geolokáciu.");
+  // ✅ Poloha používateľa (📍) – automaticky aj na tlačidlo
+  let userMarker = null;
+  function locateUser() {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          if (userMarker) map.removeLayer(userMarker);
+          userMarker = L.circleMarker([latitude, longitude], {
+            radius: 7,
+            color: "#00ffea",
+            fillColor: "#00ffea",
+            fillOpacity: 1
+          }).addTo(map);
+          userMarker.bindPopup("📍 Vaša poloha").openPopup();
+        },
+        (err) => {
+          console.warn("Poloha nebola povolená: ", err.message);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
   }
+
+  // ✅ Spustí sa hneď pri načítaní
+  locateUser();
+  // ✅ Na vyžiadanie
+  document.getElementById("locate").onclick = () => locateUser();
 </script>
 </body>
 </html>
