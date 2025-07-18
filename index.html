@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MapLibre GL JS – OSM Light</title>
-  <!-- MapLibre GL CSS -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MapLibre – Stredne tmavý OSM</title>
   <link
     href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
     rel="stylesheet"
@@ -16,42 +15,16 @@
 </head>
 <body>
   <div id="map"></div>
-
-  <!-- MapLibre GL JS -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-    // Inline style pre OSM raster dlaždice “Light” od OSM Contributors
-    const osmLightStyle = {
-      version: 8,
-      sources: {
-        'osm-tiles': {
-          type: 'raster',
-          tiles: [
-            'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors'
-        }
-      },
-      layers: [
-        {
-          id: 'osm-tiles',
-          type: 'raster',
-          source: 'osm-tiles',
-          minzoom: 0,
-          maxzoom: 19
-        }
-      ]
-    };
-
     const map = new maplibregl.Map({
       container: 'map',
-      style: osmLightStyle,
+      // “Alidade Smooth Dark” – tmavší, ale s dobre čitateľnými popismi miest
+      style: 'https://tiles.stadiamaps.com/styles/alidade_smooth_dark/style.json',
       center: [17.1077, 48.1486], // napr. Bratislava
-      zoom: 12
+      zoom: 10
     });
 
-    // Ovládacie prvky
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
   </script>
