@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MapLibre – Carto Dark</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MapLibre – Oficiálna mapa</title>
+  <!-- MapLibre GL CSS -->
   <link
     href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
     rel="stylesheet"
@@ -15,14 +16,17 @@
 </head>
 <body>
   <div id="map"></div>
+
+  <!-- MapLibre GL JS -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
     const map = new maplibregl.Map({
       container: 'map',
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [11.5755, 48.1374], // Mníchov
-      zoom: 9
+      style: 'https://demotiles.maplibre.org/style.json', // svetlý štýl od MapLibre
+      center: [17.1077, 48.1486], // napr. Bratislava
+      zoom: 12
     });
+
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
   </script>
