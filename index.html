@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko (optimalizovaný rozsah)</title>
+  <title>Radar zrážok – Slovensko + 80 km okolie</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,10 +103,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Skrátený rozsah len pre Slovensko + tesné okolie (~100 km)
+  // ✅ Slovensko + ~80 km na všetky strany
   const MAP_BOUNDS = [
-    [47.0, 16.0],  // juhozápad
-    [49.7, 22.5]   // severovýchod
+    [46.3, 15.0],  // juhozápad (80 km od SK)
+    [50.4, 23.5]   // severovýchod (80 km od SK)
   ];
 
   const map = L.map('map', {
@@ -115,14 +115,14 @@
     maxBounds: MAP_BOUNDS,
     maxBoundsViscosity: 1.0,
     noWrap: true,
-    minZoom: 7,  // ✅ kratší odzoom
-    maxZoom: 11  // ✅ väčší zoom na okresy
+    minZoom: 7,  // ✅ odzoom len na SK + okolie
+    maxZoom: 12  // ✅ detailné priblíženie
   }).fitBounds(MAP_BOUNDS);
 
   // ✅ Podkladová mapa
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 11,
+    maxZoom: 12,
     minZoom: 7,
     noWrap: true
   }).addTo(map);
@@ -183,6 +183,7 @@
 
   loadRadar();
 
+  // ✅ Ovládanie
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
