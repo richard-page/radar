@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Radar zrážok</title>
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet"/>
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet"/>
   <style>
     html, body, #map {
       height: 100%;
@@ -25,7 +25,7 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      z-index: 10;
+      z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.6);
     }
     #controls button {
@@ -59,7 +59,7 @@
       border-radius: 12px;
       font-size: 18px;
       font-weight: bold;
-      z-index: 10;
+      z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
     }
@@ -73,7 +73,7 @@
       border-top-left-radius: 5px;
       font-size: 11px;
       font-family: Arial, sans-serif;
-      z-index: 10;
+      z-index: 9999;
     }
     #attribution a {
       color: #66b3ff;
@@ -81,6 +81,25 @@
     }
     #attribution a:hover {
       text-decoration: underline;
+    }
+    @media (max-width: 600px) {
+      #controls {
+        bottom: 65px;
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      #controls button {
+        width: 44px;
+        height: 44px;
+      }
+      #controls img {
+        width: 20px;
+        height: 20px;
+      }
+      #timeBox {
+        font-size: 16px;
+        padding: 6px 14px;
+      }
     }
   </style>
 </head>
@@ -100,45 +119,55 @@
   <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
 </div>
 
-<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
 <script>
-  const savedPos = JSON.parse(localStorage.getItem("mapPos")) || {lng: 19.7, lat: 48.7, zoom: 7};
+  const savedPos = JSON.parse(localStorage.getItem("mapPos")) || {
+    lng: 19.7,
+    lat: 48.7,
+    zoom: 7
+  };
 
   const map = new maplibregl.Map({
     container: 'map',
     style: {
-      "version": 8,
-      "sources": {
-        "carto-dark": {
-          "type": "raster",
-          "tiles": [
+      version: 8,
+      sources: {
+        "dark": {
+          type: "raster",
+          tiles: [
             "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
             "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
             "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
             "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           ],
-          "tileSize": 256
+          tileSize: 256
+        },
+        "labels": {
+          type: "raster",
+          tiles: [
+            "https://a.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+            "https://b.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+            "https://c.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+            "https://d.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
+          ],
+          tileSize: 256
         }
       },
-      "layers": [
-        {
-          "id": "carto-dark-layer",
-          "type": "raster",
-          "source": "carto-dark",
-          "paint": {}
-        }
+      layers: [
+        { id: "dark-layer", type: "raster", source: "dark", paint: {} },
+        { id: "labels-layer", type: "raster", source: "labels", paint: {"raster-opacity": 1} }
       ]
     },
     center: [savedPos.lng, savedPos.lat],
     zoom: savedPos.zoom,
-    attributionControl: false
+    fadeDuration: 0
   });
-
-  map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-right');
 
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
+  let radarSourceAdded = false;
+
   const timeBox = document.getElementById("timeBox");
 
   function formatDate(timestamp) {
@@ -151,22 +180,20 @@
     if (!radarFrames[index]) return;
     const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
 
-    if (map.getSource("radar")) {
-      map.getSource("radar").tiles = [url];
-      map.triggerRepaint();
-    } else {
+    if (!radarSourceAdded) {
       map.addSource("radar", {
         type: "raster",
         tiles: [url],
         tileSize: 256
       });
-      map.addLayer({
-        id: "radar-layer",
-        type: "raster",
-        source: "radar",
-        paint: {"raster-opacity": 0.8}
-      });
+      map.addLayer({id: "radar-layer", type: "raster", source: "radar", paint: {"raster-opacity": 0.8}});
+      radarSourceAdded = true;
+    } else {
+      map.getSource("radar").tiles = [url];
+      map.style.sourceCaches["radar"].clearTiles();
+      map.style.sourceCaches["radar"].update(map.transform);
     }
+
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
@@ -180,9 +207,7 @@
       });
   }
 
-  map.on("load", () => {
-    loadRadar();
-  });
+  loadRadar();
 
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
@@ -203,7 +228,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 600);
+      }, 400);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
