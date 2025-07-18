@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrazok</title>
+  <title>Radar zrážok – Slovensko</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,10 +103,20 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map', {zoomControl: false, attributionControl: false});
+  // ✅ Mapa obmedzená na okolie Slovenska
+  const map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false,
+    maxBounds: [
+      [47.0, 15.8],  // juhozápadný roh (Rakúsko – Maďarsko)
+      [49.8, 22.8]   // severovýchodný roh (Poľsko – Ukrajina)
+    ],
+    maxBoundsViscosity: 1.0 // nedovolí posun mimo rozsah
+  });
+
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14
+    maxZoom: 10
   }).addTo(map);
 
   // ✅ Hranice Slovenska
@@ -116,7 +126,7 @@
       const geo = L.geoJSON(data, {
         style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
       }).addTo(map);
-      map.fitBounds(geo.getBounds().pad(0.25));
+      map.fitBounds(geo.getBounds().pad(0.05));
     });
 
   let radarFrames = [];
@@ -146,7 +156,6 @@
       .then(r => r.json())
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
-        // ✅ vždy posledný REÁLNY snímok (posledný z past)
         currentIndex = data.radar.past.length - 1;
 
         radarFrames.forEach((frame, i) => {
