@@ -109,6 +109,7 @@
 </head>
 <body>
 <div id="map"></div>
+
 <div id="controls">
   <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
   <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
@@ -116,34 +117,37 @@
   <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
 </div>
 <div id="timeBox">Načítavam čas...</div>
+
 <div id="attribution">
   Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &amp;
   <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
 </div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
+
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
-    preferCanvas: true,
-    zoomAnimation: false,
-    fadeAnimation: false
+    preferCanvas: true
   });
+
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
+    maxZoom: 14
+  }).addTo(map);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
     maxZoom: 14,
-    keepBuffer: 8,
-    updateWhenZooming: false,
-    updateWhenIdle: true
+    zIndex: 999
   }).addTo(map);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    opacity: 0.5,
-    pane: 'markerPane'
-  }).addTo(map);
+
   if (savedPos) {
     map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
   }
+
   fetch("slovakia_Regions_level_1.geojson")
     .then(r => r.json())
     .then(data => {
@@ -155,29 +159,27 @@
         map.fitBounds(geo.getBounds().pad(padValue));
       }
     });
+
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayer = null;
+  let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
+
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
     const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
     return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} o ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
+
   function showFrame(index) {
     if (!radarFrames[index]) return;
     const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
-    if (radarLayer) map.removeLayer(radarLayer);
-    radarLayer = L.tileLayer(url, {
-      opacity: 0.8,
-      crossOrigin: true
-    }).addTo(map);
+    radarLayer.setUrl(url);
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
+
   function loadRadar() {
-    if (radarLayer) map.removeLayer(radarLayer);
-    radarLayer = null;
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(r => r.json())
       .then(data => {
@@ -186,15 +188,19 @@
         showFrame(currentIndex);
       });
   }
+
   loadRadar();
+
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     showFrame(currentIndex);
   };
+
   document.getElementById("next").onclick = () => {
     currentIndex = (currentIndex + 1) % radarFrames.length;
     showFrame(currentIndex);
   };
+
   document.getElementById("play").onclick = () => {
     if (playInterval) {
       clearInterval(playInterval);
@@ -204,11 +210,13 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 600);
+      }, 400);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
+
   document.getElementById("refresh").onclick = () => loadRadar();
+
   map.on("moveend", () => {
     const center = map.getCenter();
     localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
