@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Naživo</title>
+  <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -40,12 +40,6 @@
       background: white;
       border-radius: 50%;
       margin-right: 8px;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink {
-      0% {opacity:1}
-      50% {opacity:0.2}
-      100% {opacity:1}
     }
     #controls {
       position: fixed;
@@ -68,10 +62,10 @@
       height: 45px;
       border-radius: 50%;
       cursor: pointer;
+      transition: background 0.2s;
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: background 0.2s;
     }
     #controls button:hover {
       background: #155A9C;
@@ -116,20 +110,20 @@
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
-    updateWhenIdle: true,
-    updateWhenZooming: false
+    preferCanvas: true,
+    updateWhenZooming: true,
+    updateWhenIdle: true
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    keepBuffer: 6
+    keepBuffer: 4
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    pane: 'markerPane',
     zIndex: 999
   }).addTo(map);
 
@@ -140,9 +134,9 @@
   }
 
   let radarFrames = [];
-  let radarLayers = [];
   let currentIndex = 0;
   let playInterval = null;
+  let radarLayer = null;
   const timeBox = document.getElementById("timeBox");
 
   function formatDate(timestamp) {
@@ -151,27 +145,25 @@
     return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} o ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 
-  function fadeToFrame(index) {
-    radarLayers.forEach((layer, i) => layer.setOpacity(i === index ? 0.8 : 0));
+  function showFrame(index) {
+    if (!radarFrames[index]) return;
+    const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
+
+    if (!radarLayer) {
+      radarLayer = L.tileLayer(url, {opacity: 0.8, zIndex: 500}).addTo(map);
+    } else {
+      radarLayer.setUrl(url);
+    }
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
   function loadRadar() {
-    radarLayers.forEach(layer => map.removeLayer(layer));
-    radarLayers = [];
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(r => r.json())
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
         currentIndex = data.radar.past.length - 1;
-        radarFrames.forEach((frame, i) => {
-          const layer = L.tileLayer(
-            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0, zIndex: 500}
-          ).addTo(map);
-          radarLayers[i] = layer;
-        });
-        fadeToFrame(currentIndex);
+        showFrame(currentIndex);
       });
   }
 
@@ -179,11 +171,11 @@
 
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
-    fadeToFrame(currentIndex);
+    showFrame(currentIndex);
   };
   document.getElementById("next").onclick = () => {
     currentIndex = (currentIndex + 1) % radarFrames.length;
-    fadeToFrame(currentIndex);
+    showFrame(currentIndex);
   };
   document.getElementById("play").onclick = () => {
     if (playInterval) {
@@ -193,8 +185,8 @@
     } else {
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
-        fadeToFrame(currentIndex);
-      }, 800);
+        showFrame(currentIndex);
+      }, 900);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
