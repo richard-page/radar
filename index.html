@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko</title>
+  <title>Radar zrážok – Slovensko (plné zrážky)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#000}
@@ -53,11 +53,11 @@
   const MAP_BOUNDS=[[46.9,15.8],[49.8,23.0]];
   const map=L.map('map',{
     zoomControl:true,attributionControl:false,maxBounds:MAP_BOUNDS,
-    maxBoundsViscosity:1,noWrap:true,minZoom:6,maxZoom:12,keepBuffer:1,
+    maxBoundsViscosity:1,noWrap:true,minZoom:6,maxZoom:12,keepBuffer:2,
     preferCanvas:true,zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true
   }).fitBounds(MAP_BOUNDS);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true,keepBuffer:1
+    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:false,keepBuffer:2
   }).addTo(map);
   fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
     L.geoJSON(d,{style:{color:"#00bfff",weight:1.5,fillOpacity:0}}).addTo(map);
@@ -74,7 +74,7 @@
       radarFrames=d.radar.past.concat(d.radar.nowcast);currentIndex=d.radar.past.length-1;
       radarFrames.forEach((f,i)=>{
         const layer=L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/4/1_1.png`,
-        {opacity:0,noWrap:true,keepBuffer:1}).addTo(map);radarLayers[i]=layer});
+        {opacity:0,noWrap:false,keepBuffer:2}).addTo(map);radarLayers[i]=layer});
       fadeToFrame(currentIndex)});
   }
   loadRadar();
