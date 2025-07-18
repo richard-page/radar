@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko + 30 km (Plynulá verzia)</title>
+  <title>Radar zrážok – Slovensko (Plynulý a bez orezov)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -107,7 +107,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Slovensko + 30 km okruh
+  // ✅ Slovensko + 30 km okruh (mapa)
   const MAP_BOUNDS = [
     [47.1, 16.0],  // juhozápad
     [49.6, 22.7]   // severovýchod
@@ -121,11 +121,11 @@
     noWrap: true,
     minZoom: 7,
     maxZoom: 11,
-    keepBuffer: 0,
-    preferCanvas: true,        // ✅ používa Canvas pre plynulosť
-    zoomAnimation: true,        // ✅ plynulý zoom
-    fadeAnimation: true,        // ✅ plynulé prechody dlaždíc
-    markerZoomAnimation: true   // ✅ plynulé priblíženie
+    keepBuffer: 1,           // ✅ nechá buffer pre plynulý prechod (1 dlaždica navyše)
+    preferCanvas: true,      // ✅ plynulejšie vykresľovanie
+    zoomAnimation: true,
+    fadeAnimation: true,
+    markerZoomAnimation: true
   }).fitBounds(MAP_BOUNDS);
 
   // ✅ Podkladová mapa (Carto Dark)
@@ -134,7 +134,7 @@
     maxZoom: 11,
     minZoom: 7,
     noWrap: true,
-    keepBuffer: 0
+    keepBuffer: 1           // ✅ buffer = prirodzený okraj bez "štvorcového orezu"
   }).addTo(map);
 
   // ✅ Hranice Slovenska
@@ -181,8 +181,7 @@
             {
               opacity: 0,
               noWrap: true,
-              bounds: MAP_BOUNDS,
-              keepBuffer: 0
+              keepBuffer: 1    // ✅ buffer = prirodzené zobrazenie na okrajoch
             }
           ).addTo(map);
           radarLayers[i] = layer;
