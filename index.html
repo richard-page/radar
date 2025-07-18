@@ -106,7 +106,29 @@
 
   const map = new maplibregl.Map({
     container: 'map',
-    style: 'https://api.maptiler.com/maps/darkmatter/style.json?key=get_your_own_key', 
+    style: {
+      "version": 8,
+      "sources": {
+        "carto-dark": {
+          "type": "raster",
+          "tiles": [
+            "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          ],
+          "tileSize": 256
+        }
+      },
+      "layers": [
+        {
+          "id": "carto-dark-layer",
+          "type": "raster",
+          "source": "carto-dark",
+          "paint": {}
+        }
+      ]
+    },
     center: [savedPos.lng, savedPos.lat],
     zoom: savedPos.zoom,
     attributionControl: false
