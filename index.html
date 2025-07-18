@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok</title>
+  <title>Radar zrážok – Plynulý (Freeze)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -105,10 +105,21 @@
         padding: 6px 14px;
       }
     }
+    #radarFreeze {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 500;
+      display: none;
+    }
   </style>
 </head>
 <body>
 <div id="map"></div>
+<canvas id="radarFreeze"></canvas>
 
 <div id="controls">
   <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
@@ -166,6 +177,9 @@
   const timeBox = document.getElementById("timeBox");
   let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
 
+  const radarFreezeCanvas = document.getElementById("radarFreeze");
+  const ctx = radarFreezeCanvas.getContext("2d");
+
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
     const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
@@ -220,7 +234,22 @@
   map.on("moveend", () => {
     const center = map.getCenter();
     localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
+    radarFreezeCanvas.style.display = "none";
+    showFrame(currentIndex);
+  });
+
+  map.on("movestart", () => {
+    const mapContainer = map.getContainer();
+    radarFreezeCanvas.width = mapContainer.clientWidth;
+    radarFreezeCanvas.height = mapContainer.clientHeight;
+    ctx.clearRect(0, 0, radarFreezeCanvas.width, radarFreezeCanvas.height);
+
+    html2canvas(mapContainer, {useCORS: true}).then(canvas => {
+      ctx.drawImage(canvas, 0, 0);
+      radarFreezeCanvas.style.display = "block";
+    });
   });
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
