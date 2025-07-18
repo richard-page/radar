@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok + Poloha (presná)</title>
+  <title>Radar zrážok + Poloha (stabilná verzia)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -207,7 +207,7 @@
   };
   document.getElementById("refresh").onclick = () => loadRadar();
 
-  // ✅ Poloha – len presná cez prehliadač
+  // ✅ Poloha – stabilná
   let userMarker = null;
   function locateUser() {
     if ("geolocation" in navigator) {
@@ -225,12 +225,13 @@
           map.setView([latitude, longitude], 10);
         },
         (err) => {
-          alert("Poloha nebola povolená: " + err.message);
+          // ❌ Ak nepovolí alebo zlyhá určovanie, nič sa nedeje, mapa ostáva na Slovensku
+          console.warn("Poloha nedostupná alebo nepovolená:", err.message);
         },
         { enableHighAccuracy: true, timeout: 5000 }
       );
     } else {
-      alert("Váš prehliadač nepodporuje geolokáciu.");
+      console.warn("Prehliadač nepodporuje geolokáciu.");
     }
   }
 
