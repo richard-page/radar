@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Radar zrážok – MapLibre</title>
+  <title>Radar zrážok</title>
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet"/>
   <style>
     html, body, #map {
@@ -82,25 +82,6 @@
     #attribution a:hover {
       text-decoration: underline;
     }
-    @media (max-width: 600px) {
-      #controls {
-        bottom: 65px;
-        padding: 10px 14px;
-        gap: 8px;
-      }
-      #controls button {
-        width: 44px;
-        height: 44px;
-      }
-      #controls img {
-        width: 20px;
-        height: 20px;
-      }
-      #timeBox {
-        font-size: 16px;
-        padding: 6px 14px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -125,7 +106,7 @@
 
   const map = new maplibregl.Map({
     container: 'map',
-    style: 'https://demotiles.maplibre.org/style.json', // ✅ základná tmavá téma
+    style: 'https://api.maptiler.com/maps/darkmatter/style.json?key=get_your_own_key', 
     center: [savedPos.lng, savedPos.lat],
     zoom: savedPos.zoom,
     attributionControl: false
@@ -137,7 +118,6 @@
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayerId = "radar-layer";
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -159,13 +139,12 @@
         tileSize: 256
       });
       map.addLayer({
-        id: radarLayerId,
+        id: "radar-layer",
         type: "raster",
         source: "radar",
         paint: {"raster-opacity": 0.8}
       });
     }
-
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
