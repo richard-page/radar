@@ -2,16 +2,20 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar zrážok – MapLibre</title>
-  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Radar zrážok – Carto Voyager</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
       height: 100%;
       width: 100%;
       margin: 0;
       padding: 0;
-      background: #000;
+      overflow: hidden;
+    }
+    .leaflet-control-zoom,
+    .leaflet-control-attribution {
+      display: none;
     }
     #controls {
       position: fixed;
@@ -19,21 +23,23 @@
       left: 50%;
       transform: translateX(-50%);
       background: rgba(7,44,78,0.9);
-      padding: 10px 16px;
+      padding: 12px 16px;
       border-radius: 25px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       z-index: 9999;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
     }
     #controls button {
       background: #0D3F73;
       border: none;
-      width: 45px;
-      height: 45px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       cursor: pointer;
+      transition: background 0.2s;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -53,13 +59,51 @@
       transform: translateX(-50%);
       background: rgba(7,44,78,0.9);
       color: white;
-      padding: 8px 20px;
-      border-radius: 15px;
+      padding: 8px 18px;
+      border-radius: 12px;
       font-size: 18px;
       font-weight: bold;
       z-index: 9999;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
+    }
+    #attribution {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #ccc;
+      padding: 2px 6px;
+      border-top-left-radius: 5px;
+      font-size: 11px;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+    }
+    #attribution a {
+      color: #66b3ff;
+      text-decoration: none;
+    }
+    #attribution a:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 600px) {
+      #controls {
+        bottom: 65px;
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      #controls button {
+        width: 44px;
+        height: 44px;
+      }
+      #controls img {
+        width: 20px;
+        height: 20px;
+      }
+      #timeBox {
+        font-size: 16px;
+        padding: 6px 14px;
+      }
     }
   </style>
 </head>
@@ -74,52 +118,47 @@
 </div>
 <div id="timeBox">Načítavam čas...</div>
 
-<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+<div id="attribution">
+  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &amp;
+  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const savedPos = JSON.parse(localStorage.getItem("mapPos"));
-  const map = new maplibregl.Map({
-    container: 'map',
-    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-    center: savedPos ? [savedPos.lng, savedPos.lat] : [19.7, 48.7],
-    zoom: savedPos ? savedPos.zoom : 7,
+  const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
+  const map = L.map('map', {
+    zoomControl: false,
     attributionControl: false
   });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 18
+  }).addTo(map);
+
+  if (savedPos) {
+    map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+  } else {
+    map.setView([48.7, 19.7], 7);
+  }
 
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayer = null;
+  let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
 
   function formatDate(timestamp) {
-    const d = new Date(timestamp * 1000);
+    const date = new Date(timestamp * 1000);
     const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
-    return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} o ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} o ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 
-  function showFrame(i) {
-    if (!radarFrames[i]) return;
-    const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[i].path}/256/{z}/{x}/{y}/4/1_1.png`;
-
-    if (radarLayer) {
-      map.removeLayer('radar');
-      map.removeSource('radar');
-    }
-
-    map.addSource('radar', {
-      type: 'raster',
-      tiles: [url],
-      tileSize: 256
-    });
-
-    map.addLayer({
-      id: 'radar',
-      type: 'raster',
-      source: 'radar',
-      paint: {"raster-opacity": 0.8}
-    });
-
-    timeBox.textContent = formatDate(radarFrames[i].time);
+  function showFrame(index) {
+    if (!radarFrames[index]) return;
+    const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
+    radarLayer.setUrl(url);
+    timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
   function loadRadar() {
@@ -132,9 +171,7 @@
       });
   }
 
-  map.on('load', () => {
-    loadRadar();
-  });
+  loadRadar();
 
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
@@ -155,7 +192,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 1200);
+      }, 700);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
@@ -163,9 +200,8 @@
   document.getElementById("refresh").onclick = () => loadRadar();
 
   map.on("moveend", () => {
-    const c = map.getCenter();
-    localStorage.setItem("mapPos", JSON.stringify({lat: c.lat, lng: c.lng, zoom: map.getZoom()}));
-    loadRadar();
+    const center = map.getCenter();
+    localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
   });
 </script>
 </body>
