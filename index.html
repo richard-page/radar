@@ -104,17 +104,10 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos"));
-
   const map = L.map('map', {zoomControl: false, attributionControl: false});
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd'
-  }).addTo(map);
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    zIndex: 999
-  }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {subdomains: 'abcd'}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {subdomains: 'abcd', zIndex: 999}).addTo(map);
 
   if (savedPos) {
     map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
@@ -176,7 +169,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 900);
+      }, 1200);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
@@ -186,6 +179,7 @@
   map.on("moveend", () => {
     const center = map.getCenter();
     localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
+    loadRadar();
   });
 </script>
 </body>
