@@ -44,22 +44,31 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const MAP_BOUNDS=[[46.9,15.8],[49.8,23.0]]
+  const savedPos=JSON.parse(localStorage.getItem("mapPos"))||null
+  const savedFrame=localStorage.getItem("currentFrame")?parseInt(localStorage.getItem("currentFrame")):null
+
   const map=L.map('map',{
-    maxBounds:MAP_BOUNDS,
-    maxBoundsViscosity:1,
     noWrap:true,
-    minZoom:6,
+    minZoom:5,
     maxZoom:12,
     attributionControl:false
-  }).fitBounds(MAP_BOUNDS)
+  })
+
+  if(savedPos){
+    map.setView(savedPos.center,savedPos.zoom)
+  } else {
+    map.setView([48.4097,18.5197],7)
+  }
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true,attribution:false
+    subdomains:'abcd',
+    maxZoom:12,
+    minZoom:5,
+    noWrap:true
   }).addTo(map)
 
   fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
-    L.geoJSON(d,{style:{color:"#00bfff",weight:1.2,fillOpacity:0}}).addTo(map)
+    L.geoJSON(d,{style:{color:"#00bfff",weight:1.5,fillOpacity:0}}).addTo(map)
   })
 
   let radarFrames=[],radarLayers=[],currentIndex=0,playInterval=null
@@ -73,13 +82,14 @@
   function fadeToFrame(i){
     radarLayers.forEach((l,x)=>l.setOpacity(x===i?0.8:0))
     timeBox.textContent=formatDate(radarFrames[i].time)
+    localStorage.setItem("currentFrame",i)
   }
 
   function loadRadar(){
     radarLayers.forEach(l=>map.removeLayer(l));radarLayers=[]
     fetch("https://api.rainviewer.com/public/weather-maps.json").then(r=>r.json()).then(d=>{
       radarFrames=d.radar.past.concat(d.radar.nowcast)
-      currentIndex=d.radar.past.length-1
+      currentIndex=savedFrame!==null?savedFrame:d.radar.past.length-1
       radarFrames.forEach((f,i)=>{
         const layer=L.tileLayer(
           `https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/4/1_1.png`,
@@ -108,6 +118,10 @@
     }
   }
   refresh.onclick=()=>loadRadar()
+
+  map.on("moveend zoomend",()=>{
+    localStorage.setItem("mapPos",JSON.stringify({center:map.getCenter(),zoom:map.getZoom()}))
+  })
 </script>
 </body>
 </html>
