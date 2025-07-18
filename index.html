@@ -2,7 +2,6 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
@@ -11,7 +10,6 @@
       width: 100%;
       margin: 0;
       padding: 0;
-      overflow: hidden;
     }
     .leaflet-control-zoom,
     .leaflet-control-attribution {
@@ -28,7 +26,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      z-index: 9999;
+      z-index: 10000;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
     #controls button {
@@ -62,7 +60,7 @@
       border-radius: 12px;
       font-size: 18px;
       font-weight: bold;
-      z-index: 9999;
+      z-index: 10000;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
     }
@@ -76,7 +74,7 @@
       border-top-left-radius: 5px;
       font-size: 11px;
       font-family: Arial, sans-serif;
-      z-index: 9999;
+      z-index: 10000;
     }
     #attribution a {
       color: #66b3ff;
@@ -109,35 +107,41 @@
 
   const map = L.map('map', {
     zoomControl: false,
-    attributionControl: false,
-    preferCanvas: true,
-    inertia: true,
-    inertiaDeceleration: 3000
+    attributionControl: false
   });
 
+  // Panely s poradie (z-index)
+  const radarPane = map.createPane('radarPane');
+  radarPane.style.zIndex = 200;
+  const labelsPane = map.createPane('labelsPane');
+  labelsPane.style.zIndex = 300;
+  const geoPane = map.createPane('geoPane');
+  geoPane.style.zIndex = 400;
+
+  // Tmavý podklad
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14,
-    updateWhenZooming: false,
-    keepBuffer: 8
+    maxZoom: 13
   }).addTo(map);
 
+  // Popisky miest (nad radarom)
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14,
-    opacity: 0.8,
-    pane: 'overlayPane'
+    opacity: 0.9,
+    pane: 'labelsPane'
   }).addTo(map);
 
   if (savedPos) {
     map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
   }
 
+  // GeoJSON hranice
   fetch("slovakia_Regions_level_1.geojson")
     .then(r => r.json())
     .then(data => {
       const geo = L.geoJSON(data, {
-        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
+        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0},
+        pane: 'geoPane'
       }).addTo(map);
       if (!savedPos) {
         map.fitBounds(geo.getBounds().pad(0.25));
@@ -174,7 +178,7 @@
         radarFrames.forEach((frame, i) => {
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0, updateWhenZooming: false, keepBuffer: 8}
+            {opacity: 0, pane: 'radarPane'}
           ).addTo(map);
           radarLayers[i] = layer;
         });
