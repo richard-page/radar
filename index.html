@@ -1,99 +1,727 @@
 <!DOCTYPE html>
 <html lang="sk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar zrážok – RainViewer API</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style>
-    body, html {margin:0; padding:0; height:100%;}
-    #map {height:100%; width:100%;}
-    .controls {
-      position:absolute; top:10px; left:50%;
-      transform:translateX(-50%); z-index:1000;
-      background:rgba(255,255,255,0.8);
-      padding:8px; border-radius:6px;
-      display:flex; gap:6px;
-    }
-    #timestamp {
-      position:absolute; bottom:10px; left:50%;
-      transform:translateX(-50%); z-index:1000;
-      background:rgba(0,0,0,0.6); color:#fff;
-      padding:4px 8px; border-radius:4px; font-size:12px;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <div class="controls">
-    <button id="prev">⏮</button>
-    <button id="play">▶</button>
-    <button id="next">⏭</button>
-    <select id="layerSelect">
-      <option value="radar">Radar</option>
-      <option value="satellite">Satelit</option>
-      <option value="temperature">Teplota</option>
-    </select>
-  </div>
-  <div id="timestamp">Načítavam…</div>
+	<head>
+		<meta charset="utf-8">
+<title>iRadar - aktuálna poloha zrážok, meteoradar | iMeteo.sk</title>
+<meta name="description" content="Kde sú zrážky ? Zistite stav aktuálnej polohy zrážok na mape. Meteoradar s rozložením dažďa, snehu a detekcia bleskov">
+<meta name="keywords" content="poloha zrážok, meteoradar, iradar, stav zrážok, kde sú zrážky, radar">
+<meta name="author" content="iMeteo.sk">
+<meta name="copyright" content="SkyMediaWeb s.r.o.">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link rel="canonical" href="https://www.imeteo.sk/iradar">
+<meta name="robots" content="all, max-image-preview:large, max-snippet:-1">
+<meta property="og:title" content="iRadar - aktuálna poloha zrážok, meteoradar">
+<meta property="og:description" content="Kde sú zrážky ? Zistite stav aktuálnej polohy zrážok na mape. Meteoradar s rozložením dažďa, snehu a detekcia bleskov">
+<meta property="og:url" content="https://www.imeteo.sk/iradar">
+<meta property="og:site_name" content="iMeteo.sk">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta property="og:image" content="https://www.imeteo.sk/images/og-image.png">
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map').setView([48.7, 19.7], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+<meta name="twitter:site" content="@iMeteosk">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.imeteo.sk/images/og-image.png">
+<meta name="twitter:description" content="Kde sú zrážky ? Zistite stav aktuálnej polohy zrážok na mape. Meteoradar s rozložením dažďa, snehu a detekcia bleskov">
+<meta name="twitter:app:id:iphone" content="1052053882">
+<meta name="twitter:app:id:ipad" content="1052053882">
+<meta name="twitter:app:id:googleplay" content="tursky.jan.imeteo.free.pocasie">
+<meta name="twitter:title" content="iRadar - aktuálna poloha zrážok, meteoradar">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"iRadar - aktuálna poloha zrážok, meteoradar","description":"Kde sú zrážky ? Zistite stav aktuálnej polohy zrážok na mape. Meteoradar s rozložením dažďa, snehu a detekcia bleskov","url":"http://www.imeteo.sk/iradar","image":"https://www.imeteo.sk/images/og-image.png"}</script>
 
-    let apiData, frames=[], current=0, timer=null, overlayLayer;
 
-    // ✅ Použijeme originálny RainViewer public weather-maps JSON
-    fetch("https://api.rainviewer.com/public/weather-maps.json")
-      .then(r => r.json())
-      .then(data => {
-        apiData = data;
-        buildFrames();
-        initControls();
-        showFrame(0);
-      });
+<script>if(!("gdprAppliesGlobally" in window)){window.gdprAppliesGlobally=true}if(!("cmp_id" in window)||window.cmp_id<1){window.cmp_id=0}if(!("cmp_cdid" in window)){window.cmp_cdid="d8bfdbdb0125b"}if(!("cmp_params" in window)){window.cmp_params=""}if(!("cmp_host" in window)){window.cmp_host="d.delivery.consentmanager.net"}if(!("cmp_cdn" in window)){window.cmp_cdn="cdn.consentmanager.net"}if(!("cmp_proto" in window)){window.cmp_proto="https:"}if(!("cmp_codesrc" in window)){window.cmp_codesrc="0"}window.cmp_getsupportedLangs=function(){var b=["DE","EN","FR","IT","NO","DA","FI","ES","PT","RO","BG","ET","EL","GA","HR","LV","LT","MT","NL","PL","SV","SK","SL","CS","HU","RU","SR","ZH","TR","UK","AR","BS","JA","CY"];if("cmp_customlanguages" in window){for(var a=0;a<window.cmp_customlanguages.length;a++){b.push(window.cmp_customlanguages[a].l.toUpperCase())}}return b};window.cmp_getRTLLangs=function(){var a=["AR"];if("cmp_customlanguages" in window){for(var b=0;b<window.cmp_customlanguages.length;b++){if("r" in window.cmp_customlanguages[b]&&window.cmp_customlanguages[b].r){a.push(window.cmp_customlanguages[b].l)}}}return a};window.cmp_getlang=function(a){if(typeof(a)!="boolean"){a=true}if(a&&typeof(cmp_getlang.usedlang)=="string"&&cmp_getlang.usedlang!==""){return cmp_getlang.usedlang}return window.cmp_getlangs()[0]};window.cmp_extractlang=function(a){if(a.indexOf("cmplang=")!=-1){a=a.substr(a.indexOf("cmplang=")+8,2).toUpperCase();if(a.indexOf("&")!=-1){a=a.substr(0,a.indexOf("&"))}}else{a=""}return a};window.cmp_getlangs=function(){var g=window.cmp_getsupportedLangs();var c=[];var f=location.hash;var e=location.search;var j="cmp_params" in window?window.cmp_params:"";var a="languages" in navigator?navigator.languages:[];if(cmp_extractlang(f)!=""){c.push(cmp_extractlang(f))}else{if(cmp_extractlang(e)!=""){c.push(cmp_extractlang(e))}else{if(cmp_extractlang(j)!=""){c.push(cmp_extractlang(j))}else{if("cmp_setlang" in window&&window.cmp_setlang!=""){c.push(window.cmp_setlang.toUpperCase())}else{if("cmp_langdetect" in window&&window.cmp_langdetect==1){c.push(window.cmp_getPageLang())}else{if(a.length>0){for(var d=0;d<a.length;d++){c.push(a[d])}}if("language" in navigator){c.push(navigator.language)}if("userLanguage" in navigator){c.push(navigator.userLanguage)}}}}}}var h=[];for(var d=0;d<c.length;d++){var b=c[d].toUpperCase();if(b.length<2){continue}if(g.indexOf(b)!=-1){h.push(b)}else{if(b.indexOf("-")!=-1){b=b.substr(0,2)}if(g.indexOf(b)!=-1){h.push(b)}}}if(h.length==0&&typeof(cmp_getlang.defaultlang)=="string"&&cmp_getlang.defaultlang!==""){return[cmp_getlang.defaultlang.toUpperCase()]}else{return h.length>0?h:["EN"]}};window.cmp_getPageLangs=function(){var a=window.cmp_getXMLLang();if(a!=""){a=[a.toUpperCase()]}else{a=[]}a=a.concat(window.cmp_getLangsFromURL());return a.length>0?a:["EN"]};window.cmp_getPageLang=function(){var a=window.cmp_getPageLangs();return a.length>0?a[0]:""};window.cmp_getLangsFromURL=function(){var c=window.cmp_getsupportedLangs();var b=location;var m="toUpperCase";var g=b.hostname[m]()+".";var a=b.pathname[m]()+"/";a=a.split("_").join("-");var f=[];for(var e=0;e<c.length;e++){var j=a.substring(0,c[e].length+1);if(g.substring(0,c[e].length+1)==c[e]+"."){f.push(c[e][m]())}else{if(c[e].length==5){var k=c[e].substring(3,5)+"-"+c[e].substring(0,2);if(g.substring(0,k.length+1)==k+"."){f.push(c[e][m]())}}else{if(j==c[e]+"/"||j=="/"+c[e]){f.push(c[e][m]())}else{if(j==c[e].replace("-","/")+"/"||j=="/"+c[e].replace("-","/")){f.push(c[e][m]())}else{if(c[e].length==5){var k=c[e].substring(3,5)+"-"+c[e].substring(0,2);var h=a.substring(0,k.length+1);if(h==k+"/"||h==k.replace("-","/")+"/"){f.push(c[e][m]())}}}}}}}return f};window.cmp_getXMLLang=function(){var c=document.getElementsByTagName("html");if(c.length>0){c=c[0]}else{c=document.documentElement}if(c&&c.getAttribute){var a=c.getAttribute("xml:lang");if(typeof(a)!="string"||a==""){a=c.getAttribute("lang")}if(typeof(a)=="string"&&a!=""){var b=window.cmp_getsupportedLangs();return b.indexOf(a.toUpperCase())!=-1||b.indexOf(a.substr(0,2).toUpperCase())!=-1?a:""}else{return""}}};(function(){var C=document;var D=C.getElementsByTagName;var o=window;var t="";var h="";var k="";var E=function(e){var i="cmp_"+e;e="cmp"+e+"=";var d="";var l=e.length;var I=location;var J=I.hash;var w=I.search;var u=J.indexOf(e);var H=w.indexOf(e);if(u!=-1){d=J.substring(u+l,9999)}else{if(H!=-1){d=w.substring(H+l,9999)}else{return i in o&&typeof(o[i])!=="function"?o[i]:""}}var G=d.indexOf("&");if(G!=-1){d=d.substring(0,G)}return d};var j=E("lang");if(j!=""){t=j;k=t}else{if("cmp_getlang" in o){t=o.cmp_getlang().toLowerCase();h=o.cmp_getlangs().slice(0,3).join("_");k=o.cmp_getPageLangs().slice(0,3).join("_");if("cmp_customlanguages" in o){var m=o.cmp_customlanguages;for(var y=0;y<m.length;y++){var a=m[y].l.toLowerCase();if(a==t){t="en"}}}}}var q=("cmp_proto" in o)?o.cmp_proto:"https:";if(q!="http:"&&q!="https:"){q="https:"}var n=("cmp_ref" in o)?o.cmp_ref:location.href;if(n.length>300){n=n.substring(0,300)}var A=function(d){var K=C.createElement("script");K.setAttribute("data-cmp-ab","1");K.type="text/javascript";K.async=true;K.src=d;var J=["body","div","span","script","head"];var w="currentScript";var H="parentElement";var l="appendChild";var I="body";if(C[w]&&C[w][H]){C[w][H][l](K)}else{if(C[I]){C[I][l](K)}else{for(var u=0;u<J.length;u++){var G=D(J[u]);if(G.length>0){G[0][l](K);break}}}}};var b=E("design");var c=E("regulationkey");var z=E("gppkey");var s=E("att");var f=o.encodeURIComponent;var g;try{g=C.cookie.length>0}catch(B){g=false}var x=E("darkmode");if(x=="0"){x=0}else{if(x=="1"){x=1}else{try{if("matchMedia" in window&&window.matchMedia){var F=window.matchMedia("(prefers-color-scheme: dark)");if("matches" in F&&F.matches){x=1}}}catch(B){x=0}}}var p=q+"//"+o.cmp_host+"/delivery/cmp.php?";p+=("cmp_id" in o&&o.cmp_id>0?"id="+o.cmp_id:"")+("cmp_cdid" in o?"&cdid="+o.cmp_cdid:"")+"&h="+f(n);p+=(b!=""?"&cmpdesign="+f(b):"")+(c!=""?"&cmpregulationkey="+f(c):"")+(z!=""?"&cmpgppkey="+f(z):"");p+=(s!=""?"&cmpatt="+f(s):"")+("cmp_params" in o?"&"+o.cmp_params:"")+(g?"&__cmpfcc=1":"");p+=(x>0?"&cmpdarkmode=1":"");A(p+"&l="+f(t)+"&ls="+f(h)+"&lp="+f(k)+"&o="+(new Date()).getTime());var r="js";var v=E("debugunminimized")!=""?"":".min";if(E("debugcoverage")=="1"){r="instrumented";v=""}if(E("debugtest")=="1"){r="jstests";v=""}A(q+"//"+o.cmp_cdn+"/delivery/"+r+"/cmp_final"+v+".js")})();window.cmp_rc=function(c,b){var l;try{l=document.cookie}catch(h){l=""}var j="";var f=0;var g=false;while(l!=""&&f<100){f++;while(l.substr(0,1)==" "){l=l.substr(1,l.length)}var k=l.substring(0,l.indexOf("="));if(l.indexOf(";")!=-1){var m=l.substring(l.indexOf("=")+1,l.indexOf(";"))}else{var m=l.substr(l.indexOf("=")+1,l.length)}if(c==k){j=m;g=true}var d=l.indexOf(";")+1;if(d==0){d=l.length}l=l.substring(d,l.length)}if(!g&&typeof(b)=="string"){j=b}return(j)};window.cmp_stub=function(){var a=arguments;__cmp.a=__cmp.a||[];if(!a.length){return __cmp.a}else{if(a[0]==="ping"){if(a[1]===2){a[2]({gdprApplies:gdprAppliesGlobally,cmpLoaded:false,cmpStatus:"stub",displayStatus:"hidden",apiVersion:"2.2",cmpId:31},true)}else{a[2](false,true)}}else{if(a[0]==="getUSPData"){a[2]({version:1,uspString:window.cmp_rc("__cmpccpausps","1---")},true)}else{if(a[0]==="getTCData"){__cmp.a.push([].slice.apply(a))}else{if(a[0]==="addEventListener"||a[0]==="removeEventListener"){__cmp.a.push([].slice.apply(a))}else{if(a.length==4&&a[3]===false){a[2]({},false)}else{__cmp.a.push([].slice.apply(a))}}}}}}};window.cmp_dsastub=function(){var a=arguments;a[0]="dsa."+a[0];window.cmp_gppstub(a)};window.cmp_gppstub=function(){var c=arguments;__gpp.q=__gpp.q||[];if(!c.length){return __gpp.q}var h=c[0];var g=c.length>1?c[1]:null;var f=c.length>2?c[2]:null;var a=null;var j=false;if(h==="ping"){a=window.cmp_gpp_ping();j=true}else{if(h==="addEventListener"){__gpp.e=__gpp.e||[];if(!("lastId" in __gpp)){__gpp.lastId=0}__gpp.lastId++;var d=__gpp.lastId;__gpp.e.push({id:d,callback:g});a={eventName:"listenerRegistered",listenerId:d,data:true,pingData:window.cmp_gpp_ping()};j=true}else{if(h==="removeEventListener"){__gpp.e=__gpp.e||[];a=false;for(var e=0;e<__gpp.e.length;e++){if(__gpp.e[e].id==f){__gpp.e[e].splice(e,1);a=true;break}}j=true}else{__gpp.q.push([].slice.apply(c))}}}if(a!==null&&typeof(g)==="function"){g(a,j)}};window.cmp_gpp_ping=function(){return{gppVersion:"1.1",cmpStatus:"stub",cmpDisplayStatus:"hidden",signalStatus:"not ready",supportedAPIs:["2:tcfeuv2","5:tcfcav1","7:usnat","8:usca","9:usva","10:usco","11:usut","12:usct","13:usfl","14:usmt","15:usor","16:ustx"],cmpId:31,sectionList:[],applicableSections:[0],gppString:"",parsedSections:{}}};window.cmp_addFrame=function(b){if(!window.frames[b]){if(document.body){var a=document.createElement("iframe");a.style.cssText="display:none";if("cmp_cdn" in window&&"cmp_ultrablocking" in window&&window.cmp_ultrablocking>0){a.src="//"+window.cmp_cdn+"/delivery/empty.html"}a.name=b;a.setAttribute("title","Intentionally hidden, please ignore");a.setAttribute("role","none");a.setAttribute("tabindex","-1");document.body.appendChild(a)}else{window.setTimeout(window.cmp_addFrame,10,b)}}};window.cmp_msghandler=function(d){var a=typeof d.data==="string";try{var c=a?JSON.parse(d.data):d.data}catch(f){var c=null}if(typeof(c)==="object"&&c!==null&&"__cmpCall" in c){var b=c.__cmpCall;window.__cmp(b.command,b.parameter,function(h,g){var e={__cmpReturn:{returnValue:h,success:g,callId:b.callId}};d.source.postMessage(a?JSON.stringify(e):e,"*")})}if(typeof(c)==="object"&&c!==null&&"__uspapiCall" in c){var b=c.__uspapiCall;window.__uspapi(b.command,b.version,function(h,g){var e={__uspapiReturn:{returnValue:h,success:g,callId:b.callId}};d.source.postMessage(a?JSON.stringify(e):e,"*")})}if(typeof(c)==="object"&&c!==null&&"__tcfapiCall" in c){var b=c.__tcfapiCall;window.__tcfapi(b.command,b.version,function(h,g){var e={__tcfapiReturn:{returnValue:h,success:g,callId:b.callId}};d.source.postMessage(a?JSON.stringify(e):e,"*")},b.parameter)}if(typeof(c)==="object"&&c!==null&&"__gppCall" in c){var b=c.__gppCall;window.__gpp(b.command,function(h,g){var e={__gppReturn:{returnValue:h,success:g,callId:b.callId}};d.source.postMessage(a?JSON.stringify(e):e,"*")},"parameter" in b?b.parameter:null,"version" in b?b.version:1)}if(typeof(c)==="object"&&c!==null&&"__dsaCall" in c){var b=c.__dsaCall;window.__dsa(b.command,function(h,g){var e={__dsaReturn:{returnValue:h,success:g,callId:b.callId}};d.source.postMessage(a?JSON.stringify(e):e,"*")},"parameter" in b?b.parameter:null,"version" in b?b.version:1)}};window.cmp_setStub=function(a){if(!(a in window)||(typeof(window[a])!=="function"&&typeof(window[a])!=="object"&&(typeof(window[a])==="undefined"||window[a]!==null))){window[a]=window.cmp_stub;window[a].msgHandler=window.cmp_msghandler;window.addEventListener("message",window.cmp_msghandler,false)}};window.cmp_setGppStub=function(a){if(!(a in window)||(typeof(window[a])!=="function"&&typeof(window[a])!=="object"&&(typeof(window[a])==="undefined"||window[a]!==null))){window[a]=window.cmp_gppstub;window[a].msgHandler=window.cmp_msghandler;window.addEventListener("message",window.cmp_msghandler,false)}};if(!("cmp_noiframepixel" in window)){window.cmp_addFrame("__cmpLocator")}if((!("cmp_disableusp" in window)||!window.cmp_disableusp)&&!("cmp_noiframepixel" in window)){window.cmp_addFrame("__uspapiLocator")}if((!("cmp_disabletcf" in window)||!window.cmp_disabletcf)&&!("cmp_noiframepixel" in window)){window.cmp_addFrame("__tcfapiLocator")}if((!("cmp_disablegpp" in window)||!window.cmp_disablegpp)&&!("cmp_noiframepixel" in window)){window.cmp_addFrame("__gppLocator")}if((!("cmp_disabledsa" in window)||!window.cmp_disabledsa)&&!("cmp_noiframepixel" in window)){window.cmp_addFrame("__dsaLocator")}window.cmp_setStub("__cmp");if(!("cmp_disabletcf" in window)||!window.cmp_disabletcf){window.cmp_setStub("__tcfapi")}if(!("cmp_disableusp" in window)||!window.cmp_disableusp){window.cmp_setStub("__uspapi")}if(!("cmp_disablegpp" in window)||!window.cmp_disablegpp){window.cmp_setGppStub("__gpp")}if(!("cmp_disabledsa" in window)||!window.cmp_disabledsa){window.cmp_setGppStub("__dsa")};</script>
 
-    function buildFrames(){
-      const sel=document.getElementById("layerSelect").value;
-      const arr=apiData[sel].past.concat(apiData[sel].nowcast||[]);
-      frames = arr.map(f=>({
-        time: f.time,
-        // Presne podľa RainViewer API (paleta rainbow, smoothing 1_1.png)
-        url: apiData.host + f.path + "/256/{z}/{x}/{y}/7/1_1.png"
-      }));
-    }
 
-    function showFrame(i){
-      current = (i+frames.length)%frames.length;
-      if(overlayLayer) map.removeLayer(overlayLayer);
-      overlayLayer=L.tileLayer(frames[current].url,{
-        tileSize:256, opacity:0.6, zIndex:500
-      }).addTo(map);
-      document.getElementById("timestamp").innerText =
-        new Date(frames[current].time*1000).toLocaleString("sk");
-    }
 
-    function changeFrame(d){ showFrame(current+d); }
+<script type="text/plain" class="cmplazyload" data-cmp-vendor="s26">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5VZHQTC');</script>
 
-    function togglePlay(){
-      const btn=document.getElementById("play");
-      if(timer){ clearInterval(timer); timer=null; btn.innerText="▶";}
-      else { timer=setInterval(()=>showFrame(current+1),800); btn.innerText="⏸";}
-    }
 
-    function initControls(){
-      document.getElementById("prev").onclick=()=>changeFrame(-1);
-      document.getElementById("next").onclick=()=>changeFrame(1);
-      document.getElementById("play").onclick=togglePlay;
-      document.getElementById("layerSelect").onchange=()=>{
-        clearInterval(timer); timer=null;
-        document.getElementById("play").innerText="▶";
-        buildFrames(); showFrame(0);
-      };
-    }
-  </script>
-</body>
+<link href="/css/global.min.css?cs=d719f8185802eb00a749a071f02160be85a37b784410f99ce20e51d46524f1e0" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta property="fb:app_id" content="260859114353956">
+<link rel="alternate" type="application/rss+xml" title="iMeteo.sk" href="https://www.imeteo.sk/rss/news">
+
+<link rel="icon" type="image/png" href="/favicons/favicon-96x96.png?cs=e4b335acb16d466e0738b55ab5a461da85a37b784410f99ce20e51d46524f1e0" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="/favicons/favicon.svg?cs=24ad410b83dcb333ab30b99872d315db85a37b784410f99ce20e51d46524f1e0">
+<link rel="shortcut icon" href="/favicons/favicon.ico?cs=2c788cbca2f0a4c038d0b6390a40a72985a37b784410f99ce20e51d46524f1e0">
+<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png?cs=f75695bf02425d3d1c6480780964014985a37b784410f99ce20e51d46524f1e0">
+<meta name="apple-mobile-web-app-title" content="iMeteo.sk">
+	<link rel="manifest" href="/favicons/site-iradar.webmanifest?cs=b15e6aba8fc04c6b3703048fe39c849585a37b784410f99ce20e51d46524f1e0">
+
+<meta name="msvalidate.01" content="A442F717C3947C8446FA16A6CD301B0B">
+	<link rel="preconnect" href="https://cdn.imeteo.sk">
+
+	<link rel="dns-prefetch" href="https://adx.adform.net">
+	<link rel="preconnect" href="https://adx.adform.net">
+
+	<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js?network-code=150108690"></script>
+	<script type="text/javascript" async src="https://mediaad-cdn.relevant-digital.com/static/tags/641030cb32374d39a72636d3.js"></script>
+
+	<!-- Relevant Yield loadAds + loadPrebid Config ------------------------------->
+	<script type="text/javascript">
+		window.loadYieldAds = function() {
+			if (window.innerWidth <= 1024) {
+				document.querySelectorAll('[data-min-width="LG"]').forEach(function (element) {element.remove();});
+			} else if (window.innerWidth > 1024) {
+				document.querySelectorAll('[data-max-width="LG"]').forEach(function (element) {element.remove();});
+			}
+			window.relevantDigital = window.relevantDigital || {};
+			relevantDigital.cmd = relevantDigital.cmd || [];
+			relevantDigital.cmd.push(function () {
+				relevantDigital.loadPrebid({
+					configId: '64104c136e49d34bd121d803',
+					manageAdserver: true,
+					collapseEmptyDivs: true,
+					collapseBeforeAdFetch: false,
+					allowedDivIds: null, // set to an array to only load certain <div>s, example - ["divId1", "divId2"]
+					noSlotReload: true, // set true to only load ad slots that have never been loaded
+					noGpt: true,
+				});
+			});
+		};
+	</script>
+
+
+				<link href="/css/iradar.min.css?cs=dc7f83d87348292494943db4733d697c85a37b784410f99ce20e51d46524f1e0" rel="stylesheet">
+		</head>
+	<body>
+		<div class="backdrop"></div>
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5VZHQTC" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+		<div class="page-container__wrapper">
+
+			
+			
+			<header class="header " id="pageHeader">
+	<a href="https://www.imeteo.sk" class="header__logo">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 28" width="104" height="22" role="img" aria-label="iMeteo.sk"><g fill="none" fill-rule="evenodd"><path fill="#FFF" d="M0 3.877c0-.455.18-.85.538-1.185.359-.335.801-.502 1.327-.502.502 0 .933.167 1.292.502.358.335.538.73.538 1.185 0 .455-.18.855-.538 1.202-.36.347-.79.521-1.292.521S.927 5.426.556 5.08C.186 4.731 0 4.331 0 3.876Zm.395 22.328V11.308c0-.311.143-.563.43-.754.287-.192.634-.287 1.04-.287.43 0 .79.095 1.076.287.287.191.43.443.43.754v14.897c0 .263-.149.509-.448.736a1.698 1.698 0 0 1-1.058.341c-.406 0-.753-.108-1.04-.323-.287-.215-.43-.467-.43-.754Zm7.64 0V2.513c0-.981.502-1.472 1.506-1.472.957 0 1.758.634 2.404 1.903l5.631 10.805 5.667-10.805c.694-1.269 1.495-1.903 2.404-1.903 1.004 0 1.506.49 1.506 1.472v23.692c0 .335-.15.598-.448.79a1.92 1.92 0 0 1-1.058.287 1.92 1.92 0 0 1-1.058-.287c-.3-.192-.449-.455-.449-.79V7.36l-5.416 10.195c-.287.55-.682.825-1.184.825-.454 0-.825-.275-1.112-.825l-5.38-10.339v18.99c0 .335-.15.598-.449.79a1.92 1.92 0 0 1-1.058.287 1.92 1.92 0 0 1-1.058-.287c-.299-.192-.448-.455-.448-.79Zm23.136-5.6v-3.77c0-1.842.7-3.433 2.098-4.773 1.399-1.34 3.079-2.01 5.04-2.01 1.865 0 3.479.627 4.842 1.884 1.363 1.256 2.045 2.83 2.045 4.72 0 .694-.084 1.25-.251 1.67-.168.418-.425.718-.772.897-.346.18-.67.293-.968.341a7.95 7.95 0 0 1-1.202.072h-7.855v1.077c0 1.316.472 2.369 1.417 3.159.944.79 2.17 1.184 3.676 1.184.79 0 1.477-.12 2.063-.359.586-.239 1.058-.472 1.417-.7.358-.227.645-.34.86-.34.335 0 .622.149.861.448.24.3.36.604.36.916 0 .55-.545 1.112-1.633 1.687-1.088.574-2.433.861-4.035.861-2.344 0-4.257-.64-5.74-1.92-1.482-1.28-2.223-2.962-2.223-5.044Zm2.977-2.98h6.636c.621 0 1.04-.077 1.255-.233.215-.155.323-.46.323-.915 0-1.077-.395-2.022-1.184-2.836-.789-.814-1.757-1.22-2.905-1.22-1.124 0-2.093.376-2.906 1.13-.813.754-1.22 1.681-1.22 2.782v1.293Zm14.276 4.237V3.374c0-.287.155-.532.466-.736a1.8 1.8 0 0 1 1.005-.305c.382 0 .729.102 1.04.305.31.204.466.45.466.736v6.893h4.52c.263 0 .478.12.645.359.168.239.251.514.251.825 0 .311-.083.58-.25.808a.77.77 0 0 1-.646.341H51.4v9.262c0 1.029.221 1.753.664 2.171.442.42 1.213.629 2.313.629h1.112c.407 0 .724.125.95.376.228.252.342.557.342.916s-.12.67-.36.933c-.238.263-.55.395-.932.395h-1.112c-3.97 0-5.954-1.807-5.954-5.42Zm10.546-1.257v-3.77c0-1.842.699-3.433 2.098-4.773 1.399-1.34 3.079-2.01 5.04-2.01 1.865 0 3.479.627 4.842 1.884 1.363 1.256 2.045 2.83 2.045 4.72 0 .694-.084 1.25-.252 1.67-.167.418-.424.718-.77.897-.347.18-.67.293-.97.341a7.95 7.95 0 0 1-1.2.072h-7.856v1.077c0 1.316.472 2.369 1.417 3.159.944.79 2.17 1.184 3.676 1.184.79 0 1.477-.12 2.063-.359.586-.239 1.058-.472 1.417-.7.358-.227.645-.34.86-.34.335 0 .622.149.861.448.24.3.359.604.359.916 0 .55-.544 1.112-1.632 1.687-1.088.574-2.433.861-4.035.861-2.344 0-4.257-.64-5.74-1.92-1.482-1.28-2.223-2.962-2.223-5.044Zm2.977-2.98h6.636c.621 0 1.04-.077 1.255-.233.215-.155.323-.46.323-.915 0-1.077-.395-2.022-1.184-2.836-.789-.814-1.757-1.22-2.905-1.22-1.124 0-2.093.376-2.906 1.13-.813.754-1.22 1.681-1.22 2.782v1.293Zm34.255 8.006c0-.527.18-.975.538-1.346.359-.371.801-.557 1.327-.557.503 0 .933.186 1.292.557.358.37.538.82.538 1.346 0 .502-.18.94-.538 1.31-.359.371-.79.556-1.292.556-.526 0-.968-.185-1.327-.556a1.823 1.823 0 0 1-.538-1.31Zm6.062-.79c0-.311.102-.616.305-.915.203-.3.448-.45.735-.45.192 0 .467.145.825.432.359.287.873.568 1.543.843.67.275 1.458.413 2.367.413 1.196 0 2.063-.215 2.6-.646.539-.43.808-.97.808-1.615 0-.79-.3-1.418-.897-1.885-.598-.467-1.327-.82-2.188-1.059-.86-.24-1.722-.503-2.583-.79a5.003 5.003 0 0 1-2.188-1.436c-.598-.67-.896-1.555-.896-2.656 0-1.364.484-2.543 1.452-3.536.969-.993 2.445-1.49 4.43-1.49 1.268 0 2.427.198 3.48.593 1.052.394 1.578.843 1.578 1.346 0 .287-.114.61-.341.969-.227.359-.508.538-.843.538-.096 0-.556-.173-1.38-.52-.826-.347-1.645-.52-2.458-.52-1.1 0-1.919.257-2.457.771-.538.515-.807 1.095-.807 1.741 0 .67.299 1.197.897 1.58.597.383 1.333.682 2.206.897.872.216 1.74.479 2.6.79.861.311 1.59.843 2.188 1.597.598.754.897 1.73.897 2.926 0 1.484-.526 2.656-1.578 3.518-1.052.861-2.523 1.292-4.412 1.292-1.626 0-3.013-.293-4.161-.88-1.148-.586-1.722-1.202-1.722-1.848Zm15.137 1.364V1.041c0-.311.138-.562.413-.754.275-.191.627-.287 1.058-.287.43 0 .789.096 1.076.287.287.192.43.443.43.754v16.8l8.179-7.395c.215-.167.43-.251.645-.251.359 0 .7.143 1.022.43.323.288.485.61.485.97a.921.921 0 0 1-.323.718l-4.986 4.415 5.954 8.651c.12.192.18.371.18.539 0 .359-.18.7-.538 1.023-.359.323-.73.485-1.112.485-.335 0-.61-.156-.825-.467l-5.704-8.364-2.977 2.656v4.954c0 .263-.15.509-.448.736a1.698 1.698 0 0 1-1.058.341c-.407 0-.754-.108-1.04-.323-.287-.215-.43-.467-.43-.754Z"/><path fill="#FFD92A" d="M86.087 28c-5.15 0-9.326-4.179-9.326-9.333 0-5.155 4.175-9.334 9.326-9.334 5.15 0 9.326 4.179 9.326 9.334 0 5.154-4.175 9.333-9.326 9.333Zm1.8-20.681a11.505 11.505 0 0 0-2.6-.112c-.888.063-1.745.224-2.56.473l2.31-4.054 2.85 3.693Zm9.539 13.149c.133-.843.173-1.715.111-2.603a11.53 11.53 0 0 0-.472-2.561l4.05 2.311-3.69 2.853Zm-2.049-8.55a11.541 11.541 0 0 0-3.905-3.398l4.499-1.232-.594 4.63ZM79.343 9.369a11.545 11.545 0 0 0-3.394 3.908l-1.232-4.502 4.626.594Z"/></g></svg>	</a>
+
+	
+	<button type="button" class="header__search-button" id="mainMenuSearch" role="button" aria-label="Vyhľadávať">
+		<span>Počasie v...</span>
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="17" height="17">  <path fill="currentColor" d="m606.077 552.611 161.914 161.914-53.465 53.465-161.914-161.914c-58.217 46.577-132.05 74.441-212.351 74.441C152.439 680.517.004 528.082.004 340.26S152.439.003 340.261.003 680.518 152.438 680.518 340.26c0 80.301-27.863 154.133-74.44 212.351zm-75.851-28.053c46.23-47.644 74.678-112.633 74.678-184.298 0-146.216-118.428-264.644-264.644-264.644S75.616 194.044 75.616 340.26 194.044 604.904 340.26 604.904c71.666 0 136.655-28.45 184.298-74.678l5.667-5.667z"/></svg>	</button>
+
+	<div class="header-search">
+	<form class="header-search__form" method="GET" onsubmit="return false">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" class="header-search__search-icon" width="22" height="22">  <path fill="currentColor" d="m606.077 552.611 161.914 161.914-53.465 53.465-161.914-161.914c-58.217 46.577-132.05 74.441-212.351 74.441C152.439 680.517.004 528.082.004 340.26S152.439.003 340.261.003 680.518 152.438 680.518 340.26c0 80.301-27.863 154.133-74.44 212.351zm-75.851-28.053c46.23-47.644 74.678-112.633 74.678-184.298 0-146.216-118.428-264.644-264.644-264.644S75.616 194.044 75.616 340.26 194.044 604.904 340.26 604.904c71.666 0 136.655-28.45 184.298-74.678l5.667-5.667z"/></svg>		<input class="header-search__input" name="search" placeholder="Vyhľadať miesto (napr. Bratislava)&hellip;">
+		<button type="button" class="header-search__geolocalizate" aria-label="Geolokalizovať" title="Geolokalizovať">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="17" height="17">  <path fill="currentColor" d="M349.092 142.123c-107.015 15.308-191.663 99.955-206.97 206.97h67.34v69.814h-67.34c15.308 107.015 99.955 191.663 206.97 206.97v-67.34h69.815v67.34c107.015-15.307 191.663-99.954 206.97-206.97h-67.34v-69.815h67.34c-15.307-107.015-99.954-191.663-206.97-206.97v67.34h-69.815v-67.34zM71.751 349.092C87.849 203.471 203.473 87.847 349.093 71.75V.018h69.815V71.75c145.62 16.098 261.244 131.722 277.343 277.342h71.732v69.815h-71.732c-16.1 145.62-131.723 261.244-277.343 277.343v71.731h-69.815V696.25C203.472 680.15 87.848 564.527 71.75 418.907H.018v-69.815H71.75zM453.815 384c0 38.559-31.256 69.815-69.815 69.815S314.185 422.559 314.185 384s31.256-69.815 69.815-69.815 69.815 31.256 69.815 69.815z"/></svg>		</button>
+		<button type="button" class="header-search__close-button" aria-label="Zavrieť vyhľadávanie" title="Zavrieť vyhľadávanie">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="13" height="13">  <path fill="currentColor" d="M384.004 298.675 682.655.019l85.328 85.33-298.651 298.655 298.651 298.651-85.328 85.328-298.651-298.651L85.35 767.983.02 682.655l298.656-298.651L.02 85.349 85.35.019l298.654 298.656z"/></svg>		</button>
+	</form>
+
+	<div class="header-search__list"></div>
+</div>
+
+<div class="header-search__backdrop"></div>
+
+	<button type="button" class="header__main-trigger" id="mainMenuTrigger" role="button" aria-label="Otvoriť menu"><span></span></button>
+
+	<div class="header__nav-wrapper" id="mainMenuContainer">
+
+		<div class="loader-container header__mobile-weather"></div>
+
+		<nav class="header__nav">
+			<div class="header__nav-submenu-container">
+				<a href="https://www.imeteo.sk/spravy" class="header__nav-link">
+					Spravodajstvo
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="9" height="9">  <path fill="currentColor" d="m383.997 447.993 298.648-298.644 85.326 85.327-383.976 383.976L.022 234.676l85.328-85.327 298.646 298.644z"/></svg>				</a>
+									<div class="header__nav-submenu">
+						<div class="header__nav-submenu-wrapper">
+							<a href="https://www.imeteo.sk/spravy" class="header__nav-submenu-link is-mobile">
+								Všetky správy
+							</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=slovensko" class="header__nav-submenu-link">
+									Slovensko
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=europa" class="header__nav-submenu-link">
+									Európa
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=svet" class="header__nav-submenu-link">
+									Svet
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=veda" class="header__nav-submenu-link">
+									Veda
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=astronomia" class="header__nav-submenu-link">
+									Astronómia
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=zivotne-prostredie" class="header__nav-submenu-link">
+									Životné prostredie
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=wiki-clanky" class="header__nav-submenu-link">
+									Wiki články
+								</a>
+															<a href="https://www.imeteo.sk/spravy?kategoria=pr-clanky" class="header__nav-submenu-link">
+									PR články
+								</a>
+													</div>
+					</div>
+							</div>
+			<a href="https://www.imeteo.sk/pocasie" class="header__nav-link">
+				Predpoveď
+			</a>
+			<a href="https://www.imeteo.sk/iradar" class="header__nav-link">
+				iRadar
+			</a>
+							<a href="https://www.imeteo.sk/model" class="header__nav-link">
+					Modely
+				</a>
+									<a href="https://www.imeteo.sk/vystrahy" class="header__nav-link">
+				MeteoWarning
+			</a>
+							<div class="header__auth-group">
+					<a href="https://www.imeteo.sk/prihlasit-sa" class="header__nav-link is-login">
+						<span>Prihlásenie</span>
+					</a>
+					<a href="https://www.imeteo.sk/registracia" class="header__nav-link is-register">
+						<span>Registrácia</span>
+					</a>
+				</div>
+					</nav>
+	</div>
+</header>
+
+			<!-- Tag for iMeteo.sk - N_iMeteo.sk_BRANDING_A0 placement -->
+	<div class="page-container__ad-container is-desktop is-iframe" style="">
+		<div class="page-container__ad">
+
+<div data-ad-src="//delivery.r2b2.cz/get/ma.imeteo.sk/generic/branding" data-min-width="LG"></div>
+
+		</div>
+	</div>
+
+			
+			<main class="page-container__content">
+				
+	<h1 class="iradar__title">
+		iRadar
+	</h1>
+
+	<div class="iradar__card is-main">
+		<nav class="radar-map-navigation ">
+		<a href="https://www.imeteo.sk/iradar" class="radar-map-navigation__link is-active">
+			iRadar
+		</a>
+					<a href="https://www.imeteo.sk/model" class="radar-map-navigation__link ">
+				Modely
+			</a>
+					</nav>
+
+		<div id="map_canvas" class="iradar__map-container"></div>
+
+		<div class="page-container__ad-container is-mobile is-maxed-size" style="min-height: 280px">
+		<div class="page-container__ad">
+
+<div data-ad-src="https://ad.mox.tv/mox/mwayss_invocation.min.js?pzoneid=5240&height=405&width=720&tld=imeteo.sk" data-max-width="MD"></div>
+
+		</div>
+	</div>
+	</div>
+
+	<div class="iradar__columns">
+		<div>
+			<div class="iradar__card">
+				<div class="iradar__options">
+					<div class="form__input-container form__select-container iradar__option">
+						<label class="form__label">
+							<select class="form__input" required name="tilesSource"><option value="Esri">Topografick&aacute; mapa</option><option value="DarkOSM">Tmav&aacute;</option><option value="LightOSM" selected="selected">Svetl&aacute;</option><option value="OSM">OSM</option></select>
+							<span class="form__placeholder">Mapa</span>
+						</label>
+					</div>
+
+					<div class="form__input-container form__select-container iradar__option iradar__fake-select-container" tabindex="0">
+						<label class="form__label">
+							<div class="form__input iradar__layers-fake-input" id="layersFakeInput" data-empty="Vyberte vrstvy"></div>
+							<select class="form__input" name="layers[]" multiple hidden="1"><option value="Radar">Zr&aacute;žky</option><option value="Lightning">Blesky</option><option value="Temperatures">Teploty</option></select>
+							<span class="form__placeholder">Zobraziť</span>
+						</label>
+						<div class="iradar__fake-select-options" hidden>
+							<label class="form__label form__checkbox-container iradar__fake-select-label">
+								<input type="checkbox" name="layersCheckbox" value="Radar" required>
+								<span class="form__checkbox"></span>
+								<span>
+									Zrážky
+								</span>
+							</label>
+							<label class="form__label form__checkbox-container iradar__fake-select-label">
+								<input type="checkbox" name="layersCheckbox" value="Lightning" required>
+								<span class="form__checkbox"></span>
+								<span>
+									Blesky
+								</span>
+							</label>
+							<label class="form__label form__checkbox-container iradar__fake-select-label">
+								<input type="checkbox" name="layersCheckbox" value="Temperatures" required>
+								<span class="form__checkbox"></span>
+								<span>
+									Teploty
+								</span>
+							</label>
+						</div>
+					</div>
+
+					<div class="iradar__option">
+						<span class="iradar__slider-label">Rýchlosť animácie</span>
+						<div class="iradar__animation-speed-slider"></div>
+					</div>
+
+					<div class="iradar__option">
+						<span class="iradar__slider-label">Posledná snímka</span>
+						<div class="iradar__last-slide-delay-slider"></div>
+					</div>
+
+					<div class="iradar__option">
+						<span class="iradar__slider-label">Priehľadnosť radarov</span>
+						<div class="iradar__radar-opacity-slider"></div>
+					</div>
+
+					<div class="iradar__option">
+						<span class="iradar__slider-label">Priehľadnosť bleskov</span>
+						<div class="iradar__lightnings-opacity-slider"></div>
+					</div>
+				</div>
+
+				<div class="iradar__search-container">
+					<h2 class="iradar__search-title">
+						Vyhľadať lokalitu
+					</h2>
+					<label class="form__label iradar__search-input-container">
+						<input class="form__input iradar__search-input" type="text" name="mapLocation" placeholder="Vyhľadať miesto (napr. Bratislava)&hellip;">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" class="iradar__search-icon" width="24" height="24">  <path fill="currentColor" d="m606.077 552.611 161.914 161.914-53.465 53.465-161.914-161.914c-58.217 46.577-132.05 74.441-212.351 74.441C152.439 680.517.004 528.082.004 340.26S152.439.003 340.261.003 680.518 152.438 680.518 340.26c0 80.301-27.863 154.133-74.44 212.351zm-75.851-28.053c46.23-47.644 74.678-112.633 74.678-184.298 0-146.216-118.428-264.644-264.644-264.644S75.616 194.044 75.616 340.26 194.044 604.904 340.26 604.904c71.666 0 136.655-28.45 184.298-74.678l5.667-5.667z"/></svg>					</label>
+					
+				</div>
+			</div>
+
+			<div class="iradar__card has-padding">
+				<h2 class="iradar__subtitle">
+					Zdroje dát
+				</h2>
+				<div class="iradar__sources-list">
+					<a href="http://www.chmi.cz/portal/dt?menu=JSPTabContainer/P10_0_Aktualni_situace/P10_1_Pocasi/P10_1_1_Cesko/P10_1_1_2_Radary" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/chmu.avif" type="image/avif">
+							<img src="/images/iradar/logos/chmu.png" class="iradar__sources-image" alt="CHMU" title="">
+						</picture>
+					</a>
+					<a href="http://www.shmu.sk/sk/?page=1&amp;id=meteo_radar" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/shmu.avif" type="image/avif">
+							<img src="/images/iradar/logos/shmu.png" class="iradar__sources-image" alt="SHMU" title="">
+						</picture>
+					</a>
+					<a href="http://www.dwd.de/" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/dwd.avif" type="image/avif">
+							<img src="/images/iradar/logos/dwd.png" class="iradar__sources-image" alt="DWD" title="">
+						</picture>
+					</a>
+					<a href="http://pogodynka.pl/" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/pogodynka.avif" type="image/avif">
+							<img src="/images/iradar/logos/pogodynka.png" class="iradar__sources-image" alt="Pogodynka" title="">
+						</picture>
+					</a>
+					<a href="http://www.meteo.si/" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/arso.avif" type="image/avif">
+							<img src="/images/iradar/logos/arso.png" class="iradar__sources-image" alt="Arso Meteo" title="">
+						</picture>
+					</a>
+					<a href="http://www.blitzortung.org/" target="_blank" class="iradar__sources-link">
+						<picture>
+							<source srcset="/images/iradar/logos/blitzortung.avif" type="image/avif">
+							<img src="/images/iradar/logos/blitzortung.png" class="iradar__sources-image" alt="Blitzortung" title="">
+						</picture>
+					</a>
+				</div>
+			</div>
+
+		</div>
+		<div>
+
+			<!-- Tag for iMeteo.sk - iMeteo.sk_SQUARE_A1 placement -->
+	<div class="page-container__ad-container is-desktop is-bottom-margin" style="min-height: 300px">
+		<div class="page-container__ad">
+
+<div data-ad-unit-id="/150108690/imeteo.sk/imeteo.sk_A1"></div>
+
+		</div>
+	</div>
+
+			<!--googleoff: index-->
+	<div class="popular-news iradar__popular-news" data-nosnippet>
+
+		<div class="popular-news__header-container">
+			<div class="popular-news__header">
+				Najčítanejšie správy
+			</div>
+			<div class="popular-news__switches">
+									<button type="button" class="popular-news__switch-button is-active" data-list-trigger="24h">
+						24 hodín
+					</button>
+													<button type="button" class="popular-news__switch-button" data-list-trigger="week">
+						Týždeň
+					</button>
+							</div>
+		</div>
+
+					<div data-list="24h">
+									<a href="https://www.imeteo.sk/spravy/po-rannom-lejaku-cakajte-krupy-aj-lejaky-kde-dnes-s-nimi-ratat" class="popular-news__item">
+						<span class="popular-news__title" title="Po rannom lejaku čakajte krúpy aj lejaky. Kde dnes s nimi rátať?">
+							Po rannom lejaku čakajte krúpy aj lejaky. Kde dnes s nimi rátať?
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 17 hodinami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/kosicami-sa-rychlo-siri-tato-azijska-invazivna-rastlina-u-obyvatelov-vzbudzuje-obavy" class="popular-news__item">
+						<span class="popular-news__title" title="Košicami sa rýchlo šíri táto ázijská invazívna rastlina. V meste vzbudzuje obavy">
+							Košicami sa rýchlo šíri táto ázijská invazívna rastlina. V meste vzbudzuje obavy
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 2 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/kontroverzny-krok-cina-znicila-300-priehrad-teraz-je-na-rade-nieco-velke" class="popular-news__item">
+						<span class="popular-news__title" title="Kontroverzný krok: Čína zničila 300 priehrad. Teraz je na rade niečo veľké">
+							Kontroverzný krok: Čína zničila 300 priehrad. Teraz je na rade niečo veľké
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 2 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/predpoved-pocasia-na-piatok-18-jula-cakaju-nas-burky-aj-zajtra" class="popular-news__item">
+						<span class="popular-news__title" title="Predpoveď počasia na piatok 18. júla: Čakajú nás búrky aj zajtra?">
+							Predpoveď počasia na piatok 18. júla: Čakajú nás búrky aj zajtra?
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 1 dňom
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/predpoved-burky-a-prehanky-ustavaju-no-uz-sa-crtaju-dalsie-silne-burky" class="popular-news__item">
+						<span class="popular-news__title" title="PREDPOVEĎ: Búrky a prehánky ustávajú, no už sa črtajú ďalšie silné búrky">
+							PREDPOVEĎ: Búrky a prehánky ustávajú, no už sa črtajú ďalšie silné búrky
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 4 hodinami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/tragedia-na-liptove-zena-po-kupani-zomrela-na-bakteriu" class="popular-news__item">
+						<span class="popular-news__title" title="Tragédia na Liptove. Žena po kúpaní zomrela na baktériu">
+							Tragédia na Liptove. Žena po kúpaní zomrela na baktériu
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 6 hodinami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/novy-seizmicky-roj-ma-sa-teraz-europa-obavat-silneho-zemetrasenia" class="popular-news__item">
+						<span class="popular-news__title" title="Nový seizmický roj. Má sa teraz Európa obávať silného zemetrasenia">
+							Nový seizmický roj. Má sa teraz Európa obávať silného zemetrasenia
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 3 hodinami
+							</span>
+													</span>
+					</a>
+							</div>
+							<div data-list="week" hidden>
+									<a href="https://www.imeteo.sk/spravy/tornado-poskodilo-najmenej-25-domov-pozrite-si-skody" class="popular-news__item">
+						<span class="popular-news__title" title="Tornádo poškodilo najmenej 25 domov. Pozrite si škody">
+							Tornádo poškodilo najmenej 25 domov. Pozrite si škody
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 2 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/pocasie-na-zajtra-utorok-15-jula-opaet-udru-silne-burky-kde-sa-vyskytnu" class="popular-news__item">
+						<span class="popular-news__title" title="Počasie na zajtra, utorok 15. júla: Opäť udrú silné búrky. Kde sa vyskytnú?">
+							Počasie na zajtra, utorok 15. júla: Opäť udrú silné búrky. Kde sa vysk...
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 4 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/cast-europy-dnes-zasiahnu-silne-burky-neobidu-ani-slovensko-kde-sa-vyskytnu" class="popular-news__item">
+						<span class="popular-news__title" title="Časť Európy dnes zasiahnu silné búrky, neobídu ani Slovensko. Kde sa vyskytnú?">
+							Časť Európy dnes zasiahnu silné búrky, neobídu ani Slovensko. Kde sa v...
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 5 dní
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/burky-nas-cakaju-kazdy-den-tato-jedna-cast-slovenska-zazije-najsilnejsie-burky-kazdy-den" class="popular-news__item">
+						<span class="popular-news__title" title="Búrky nás čakajú každý deň. Táto jedna časť Slovenska zažije najsilnejšie búrky každý deň">
+							Búrky nás čakajú každý deň. Táto jedna časť Slovenska zažije najsilnej...
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 3 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/kontroverzny-krok-cina-znicila-300-priehrad-teraz-je-na-rade-nieco-velke" class="popular-news__item">
+						<span class="popular-news__title" title="Kontroverzný krok: Čína zničila 300 priehrad. Teraz je na rade niečo veľké">
+							Kontroverzný krok: Čína zničila 300 priehrad. Teraz je na rade niečo v...
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 2 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/prave-sa-blizi-vyrazny-lejak-o-chvilu-poriadne-zaprsi" class="popular-news__item">
+						<span class="popular-news__title" title="Práve sa blíži výrazný lejak. O chvíľu poriadne zaprší">
+							Práve sa blíži výrazný lejak. O chvíľu poriadne zaprší
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 2 dňami
+							</span>
+													</span>
+					</a>
+									<a href="https://www.imeteo.sk/spravy/mapa-podvecer-cakajte-v-tychto-okresoch-mozny-vyskyt-burok" class="popular-news__item">
+						<span class="popular-news__title" title="MAPA: Podvečer čakajte v týchto okresoch možný výskyt búrok">
+							MAPA: Podvečer čakajte v týchto okresoch možný výskyt búrok
+						</span>
+						<span class="popular-news__item-info">
+							<span>
+								pred 5 dní
+							</span>
+													</span>
+					</a>
+							</div>
+		
+		<a href="https://www.imeteo.sk/spravy" class="popular-news__show-more">
+			Zobraziť viac článkov
+		</a>
+
+	</div>
+	<!--googleon: index-->
+
+
+			<a href="https://www.imeteo.sk/poslite-fotografiu" class="send-photo-widget iradar__send-photo">
+	<picture>
+		<source srcset="/images/widgets/send-photo.avif, /images/widgets/send-photo@2.avif 2x" type="image/avif">
+		<source srcset="/images/widgets/send-photo.png, /images/widgets/send-photo@2.png 2x">
+		<img src="/images/widgets/send-photo.png" alt="bg" title="" class="send-photo-widget__background" loading="lazy" decoding="async" aria-hidden="true">
+	</picture>
+	<span class="send-photo-widget__content">
+		<span class="send-photo-widget__title">
+			Pošlite nám svoje fotografie
+		</span>
+		<span class="send-photo-widget__paragraph">
+			Podarilo sa vám zachytiť zaujímavý meteo moment? Podeľte sa oň s našimi čitateľmi.
+		</span>
+		<span class="form__button">
+			Odoslať fotografie
+		</span>
+	</span>
+</a>
+
+			<!-- Tag for iMeteo.sk - iMeteo.sk_DOUBLESQUARE_A1a placement -->
+	<div class="page-container__ad-container is-desktop is-sticky is-top-margin" style="min-height: 600px">
+		<div class="page-container__ad">
+
+<div data-ad-unit-id="/150108690/imeteo.sk/imeteo.sk_A1a"></div>
+
+		</div>
+	</div>
+
+		</div>
+	</div>
+
+				<!-- Tag for iMeteo.sk - iMeteo.sk_leaderboard_A2b placement -->
+	<div class="page-container__ad-container is-top-margin is-desktop" style="min-height: 310px">
+		<div class="page-container__ad">
+
+<div data-min-width="LG" data-ad-unit-id="/150108690/imeteo.sk/imeteo.sk_A2b"></div>
+
+		</div>
+	</div>
+			</main>
+
+			<footer class="footer">
+	<div class="footer__container">
+		<nav class="footer__nav">
+			<div class="footer__nav-group">
+				<a href="https://www.imeteo.sk/kontakt-a-reklama" class="footer__nav-link">
+					Kontakt
+				</a>
+				<a href="/downloads/Cennik_MediaAd.pdf" target="_blank" class="footer__nav-link">
+					Reklama a cenník reklamy
+				</a>
+				<a href="https://www.imeteo.sk/pocasie-pre-vas-web" class="footer__nav-link">
+					Počasie pre Váš web a XML
+				</a>
+			</div>
+			<div class="footer__nav-group">
+				<a href="https://www.imeteo.sk/o-cookies" class="footer__nav-link">
+					Cookies
+				</a>
+				<a href="https://www.imeteo.sk/podmienky-pouzivania" class="footer__nav-link">
+					Podmienky používania
+				</a>
+				<a href="https://www.imeteo.sk/ochrana-osobnych-udajov" class="footer__nav-link">
+					Ochrana osobných údajov
+				</a>
+			</div>
+		</nav>
+		<div>
+			<div class="footer__socials-title">
+				Sledujte nás
+			</div>
+			<div class="footer__socials-list">
+				<a href="https://www.facebook.com/imeteo" target="_blank" class="footer__socials-link is-facebook" rel="noopener noreferrer" alt="Facebook" title="Facebook">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="16" height="16">  <path fill="currentColor" d="M548.464 384.283H440.85v383.704H281.397V384.283h-75.839V248.734h75.839v-87.742C281.397 98.258 311.204.004 442.29.004l118.126.48v131.613H474.69c-13.968 0-33.839 7.008-33.839 36.959v79.678h121.582l-13.968 135.549z"/></svg>				</a>
+				<a href="https://t.me/imeteo" target="_blank" class="footer__socials-link is-telegram" rel="noopener noreferrer" alt="Telegram" title="Telegram">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="16" height="16">  <path fill="currentColor" d="M765.459 121.639 649.93 667.279c-8.001 38.723-31.362 48.004-64.004 30.083l-176.013-130.25-85.126 82.246c-9.601 9.601-17.602 17.921-35.202 17.921-23.041 0-19.201-8.641-26.882-30.402l-60.805-198.094-174.413-54.404c-37.763-11.201-38.083-37.123 8.321-56.004L716.175 65.956c31.042-13.761 60.805 7.681 49.284 55.684z"/></svg>				</a>
+				<a href="https://www.instagram.com/imeteo.sk/" target="_blank" class="footer__socials-link is-instagram" rel="noopener noreferrer" alt="Instagram" title="Instagram">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="16" height="16">  <path fill="currentColor" d="M384.23 69.172c102.617 0 114.769.45 155.125 2.25 37.506 1.65 57.759 7.952 71.261 13.202 17.853 6.901 30.755 15.302 44.107 28.654 13.502 13.502 21.754 26.255 28.804 44.107 5.251 13.502 11.552 33.905 13.202 71.261 1.8 40.507 2.25 52.658 2.25 155.125s-.45 114.769-2.25 155.125c-1.65 37.506-7.952 57.759-13.202 71.261-6.901 17.853-15.302 30.755-28.654 44.107-13.502 13.502-26.255 21.754-44.107 28.804-13.502 5.251-33.905 11.552-71.261 13.202-40.507 1.8-52.658 2.25-155.125 2.25s-114.769-.45-155.125-2.25c-37.506-1.65-57.759-7.951-71.261-13.202-17.853-6.901-30.755-15.302-44.107-28.654-13.502-13.502-21.754-26.255-28.804-44.107-5.251-13.502-11.552-33.905-13.202-71.261-1.8-40.507-2.25-52.658-2.25-155.125s.45-114.769 2.25-155.125c1.65-37.506 7.952-57.759 13.202-71.261 6.901-17.853 15.302-30.755 28.654-44.107 13.502-13.502 26.255-21.754 44.107-28.804 13.502-5.251 33.905-11.552 71.261-13.202 40.357-1.8 52.508-2.25 155.125-2.25zm0-69.161c-104.267 0-117.319.45-158.275 2.25-40.807 1.8-68.861 8.402-93.165 17.853-25.354 9.902-46.808 22.954-68.111 44.407-21.454 21.304-34.505 42.757-44.407 67.961C10.82 156.936 4.22 184.84 2.419 225.647c-1.8 41.107-2.25 54.159-2.25 158.426s.45 117.319 2.25 158.275c1.8 40.807 8.401 68.861 17.853 93.165 9.901 25.354 22.954 46.807 44.407 68.111 21.304 21.304 42.757 34.505 67.961 44.257 24.454 9.452 52.358 16.052 93.165 17.853 40.957 1.8 54.009 2.25 158.275 2.25s117.319-.45 158.275-2.25c40.807-1.8 68.861-8.402 93.165-17.853 25.204-9.751 46.658-22.954 67.961-44.257s34.505-42.757 44.257-67.961c9.452-24.454 16.052-52.358 17.853-93.165 1.8-40.957 2.25-54.009 2.25-158.275s-.45-117.319-2.25-158.275c-1.8-40.807-8.402-68.861-17.853-93.165-9.451-25.504-22.504-46.958-43.957-68.261-21.304-21.304-42.757-34.505-67.961-44.257-24.454-9.451-52.358-16.052-93.165-17.853C501.548.462 488.496.011 384.23.011z"/>  <path fill="currentColor" d="M384.23 186.791c-108.917 0-197.281 88.364-197.281 197.281s88.364 197.281 197.281 197.281 197.281-88.364 197.281-197.281-88.364-197.281-197.281-197.281zm0 325.252c-70.661 0-127.97-57.309-127.97-127.97s57.309-127.97 127.97-127.97 127.97 57.309 127.97 127.97-57.309 127.97-127.97 127.97zM635.371 178.99c0 25.436-20.62 46.058-46.058 46.058s-46.057-20.621-46.057-46.058c0-25.436 20.62-46.057 46.057-46.057s46.058 20.62 46.058 46.057z"/></svg>				</a>
+				<a href="https://news.google.com/s/CBIw-5Pc5UI?sceid=SK:sk&r=11&oc=1" target="_blank" class="footer__socials-link is-google" rel="noopener noreferrer" alt="Google News" title="Google News">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="16" height="16">  <path fill="currentColor" d="M391.65 329.102v131.694h217.79c-8.849 56.548-65.847 165.592-217.79 165.592-131.094 0-238.04-108.596-238.04-242.389S260.556 141.61 391.65 141.61c74.547 0 124.495 31.798 152.993 59.248l104.245-100.346C581.991 37.815 495.295.016 391.649.016 179.408.016 7.666 171.759 7.666 383.999s171.743 383.984 383.983 383.984c221.54 0 368.684-155.843 368.684-375.134 0-25.199-2.7-44.398-6-63.597l-362.684-.15z"/></svg>				</a>
+				<a href="https://www.imeteo.sk/rss/news" target="_blank" class="footer__socials-link is-rss" alt="RSS" title="RSS">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" width="16" height="16">  <path fill="currentColor" d="M102.219 563.19c-56.396 0-102.217 46-102.217 102.056 0 56.365 45.824 101.85 102.217 101.85 56.599 0 102.369-45.485 102.369-101.85-.001-56.056-45.767-102.056-102.369-102.056zM.117 260.944v147.191c95.837 0 185.966 37.478 253.84 105.382 67.787 67.738 105.21 158.275 105.21 254.471h147.839C507.005 488.377 279.547 260.943.117 260.943zM.291 0v147.265c341.831 0 620.058 278.497 620.058 620.724h147.64C767.989 344.642 423.554 0 .291 0z"/></svg>				</a>
+			</div>
+		</div>
+	</div>
+
+	<div class="footer__copyright">
+		<div>
+			<a href="//www.mediaad.sk" target="_blank" class="footer__copyright-link" rel="noreferrer">MediaAd, s.r.o.</a> -
+			<a href="https://www.imeteo.sk" class="footer__copyright-link">iMeteo.sk</a>,
+			&copy; 2007-2025
+		</div>
+		<div>
+			<a href="https://www.imeteo.sk">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 28" class="footer__copyright-logo" width="75" height="16" role="img" aria-label="iMeteo.sk"><g fill="none" fill-rule="evenodd"><path fill="#FFF" d="M0 3.877c0-.455.18-.85.538-1.185.359-.335.801-.502 1.327-.502.502 0 .933.167 1.292.502.358.335.538.73.538 1.185 0 .455-.18.855-.538 1.202-.36.347-.79.521-1.292.521S.927 5.426.556 5.08C.186 4.731 0 4.331 0 3.876Zm.395 22.328V11.308c0-.311.143-.563.43-.754.287-.192.634-.287 1.04-.287.43 0 .79.095 1.076.287.287.191.43.443.43.754v14.897c0 .263-.149.509-.448.736a1.698 1.698 0 0 1-1.058.341c-.406 0-.753-.108-1.04-.323-.287-.215-.43-.467-.43-.754Zm7.64 0V2.513c0-.981.502-1.472 1.506-1.472.957 0 1.758.634 2.404 1.903l5.631 10.805 5.667-10.805c.694-1.269 1.495-1.903 2.404-1.903 1.004 0 1.506.49 1.506 1.472v23.692c0 .335-.15.598-.448.79a1.92 1.92 0 0 1-1.058.287 1.92 1.92 0 0 1-1.058-.287c-.3-.192-.449-.455-.449-.79V7.36l-5.416 10.195c-.287.55-.682.825-1.184.825-.454 0-.825-.275-1.112-.825l-5.38-10.339v18.99c0 .335-.15.598-.449.79a1.92 1.92 0 0 1-1.058.287 1.92 1.92 0 0 1-1.058-.287c-.299-.192-.448-.455-.448-.79Zm23.136-5.6v-3.77c0-1.842.7-3.433 2.098-4.773 1.399-1.34 3.079-2.01 5.04-2.01 1.865 0 3.479.627 4.842 1.884 1.363 1.256 2.045 2.83 2.045 4.72 0 .694-.084 1.25-.251 1.67-.168.418-.425.718-.772.897-.346.18-.67.293-.968.341a7.95 7.95 0 0 1-1.202.072h-7.855v1.077c0 1.316.472 2.369 1.417 3.159.944.79 2.17 1.184 3.676 1.184.79 0 1.477-.12 2.063-.359.586-.239 1.058-.472 1.417-.7.358-.227.645-.34.86-.34.335 0 .622.149.861.448.24.3.36.604.36.916 0 .55-.545 1.112-1.633 1.687-1.088.574-2.433.861-4.035.861-2.344 0-4.257-.64-5.74-1.92-1.482-1.28-2.223-2.962-2.223-5.044Zm2.977-2.98h6.636c.621 0 1.04-.077 1.255-.233.215-.155.323-.46.323-.915 0-1.077-.395-2.022-1.184-2.836-.789-.814-1.757-1.22-2.905-1.22-1.124 0-2.093.376-2.906 1.13-.813.754-1.22 1.681-1.22 2.782v1.293Zm14.276 4.237V3.374c0-.287.155-.532.466-.736a1.8 1.8 0 0 1 1.005-.305c.382 0 .729.102 1.04.305.31.204.466.45.466.736v6.893h4.52c.263 0 .478.12.645.359.168.239.251.514.251.825 0 .311-.083.58-.25.808a.77.77 0 0 1-.646.341H51.4v9.262c0 1.029.221 1.753.664 2.171.442.42 1.213.629 2.313.629h1.112c.407 0 .724.125.95.376.228.252.342.557.342.916s-.12.67-.36.933c-.238.263-.55.395-.932.395h-1.112c-3.97 0-5.954-1.807-5.954-5.42Zm10.546-1.257v-3.77c0-1.842.699-3.433 2.098-4.773 1.399-1.34 3.079-2.01 5.04-2.01 1.865 0 3.479.627 4.842 1.884 1.363 1.256 2.045 2.83 2.045 4.72 0 .694-.084 1.25-.252 1.67-.167.418-.424.718-.77.897-.347.18-.67.293-.97.341a7.95 7.95 0 0 1-1.2.072h-7.856v1.077c0 1.316.472 2.369 1.417 3.159.944.79 2.17 1.184 3.676 1.184.79 0 1.477-.12 2.063-.359.586-.239 1.058-.472 1.417-.7.358-.227.645-.34.86-.34.335 0 .622.149.861.448.24.3.359.604.359.916 0 .55-.544 1.112-1.632 1.687-1.088.574-2.433.861-4.035.861-2.344 0-4.257-.64-5.74-1.92-1.482-1.28-2.223-2.962-2.223-5.044Zm2.977-2.98h6.636c.621 0 1.04-.077 1.255-.233.215-.155.323-.46.323-.915 0-1.077-.395-2.022-1.184-2.836-.789-.814-1.757-1.22-2.905-1.22-1.124 0-2.093.376-2.906 1.13-.813.754-1.22 1.681-1.22 2.782v1.293Zm34.255 8.006c0-.527.18-.975.538-1.346.359-.371.801-.557 1.327-.557.503 0 .933.186 1.292.557.358.37.538.82.538 1.346 0 .502-.18.94-.538 1.31-.359.371-.79.556-1.292.556-.526 0-.968-.185-1.327-.556a1.823 1.823 0 0 1-.538-1.31Zm6.062-.79c0-.311.102-.616.305-.915.203-.3.448-.45.735-.45.192 0 .467.145.825.432.359.287.873.568 1.543.843.67.275 1.458.413 2.367.413 1.196 0 2.063-.215 2.6-.646.539-.43.808-.97.808-1.615 0-.79-.3-1.418-.897-1.885-.598-.467-1.327-.82-2.188-1.059-.86-.24-1.722-.503-2.583-.79a5.003 5.003 0 0 1-2.188-1.436c-.598-.67-.896-1.555-.896-2.656 0-1.364.484-2.543 1.452-3.536.969-.993 2.445-1.49 4.43-1.49 1.268 0 2.427.198 3.48.593 1.052.394 1.578.843 1.578 1.346 0 .287-.114.61-.341.969-.227.359-.508.538-.843.538-.096 0-.556-.173-1.38-.52-.826-.347-1.645-.52-2.458-.52-1.1 0-1.919.257-2.457.771-.538.515-.807 1.095-.807 1.741 0 .67.299 1.197.897 1.58.597.383 1.333.682 2.206.897.872.216 1.74.479 2.6.79.861.311 1.59.843 2.188 1.597.598.754.897 1.73.897 2.926 0 1.484-.526 2.656-1.578 3.518-1.052.861-2.523 1.292-4.412 1.292-1.626 0-3.013-.293-4.161-.88-1.148-.586-1.722-1.202-1.722-1.848Zm15.137 1.364V1.041c0-.311.138-.562.413-.754.275-.191.627-.287 1.058-.287.43 0 .789.096 1.076.287.287.192.43.443.43.754v16.8l8.179-7.395c.215-.167.43-.251.645-.251.359 0 .7.143 1.022.43.323.288.485.61.485.97a.921.921 0 0 1-.323.718l-4.986 4.415 5.954 8.651c.12.192.18.371.18.539 0 .359-.18.7-.538 1.023-.359.323-.73.485-1.112.485-.335 0-.61-.156-.825-.467l-5.704-8.364-2.977 2.656v4.954c0 .263-.15.509-.448.736a1.698 1.698 0 0 1-1.058.341c-.407 0-.754-.108-1.04-.323-.287-.215-.43-.467-.43-.754Z"/><path fill="#FFD92A" d="M86.087 28c-5.15 0-9.326-4.179-9.326-9.333 0-5.155 4.175-9.334 9.326-9.334 5.15 0 9.326 4.179 9.326 9.334 0 5.154-4.175 9.333-9.326 9.333Zm1.8-20.681a11.505 11.505 0 0 0-2.6-.112c-.888.063-1.745.224-2.56.473l2.31-4.054 2.85 3.693Zm9.539 13.149c.133-.843.173-1.715.111-2.603a11.53 11.53 0 0 0-.472-2.561l4.05 2.311-3.69 2.853Zm-2.049-8.55a11.541 11.541 0 0 0-3.905-3.398l4.499-1.232-.594 4.63ZM79.343 9.369a11.545 11.545 0 0 0-3.394 3.908l-1.232-4.502 4.626.594Z"/></g></svg>			</a>
+		</div>
+	</div>
+</footer>
+
+			<div id="fb-root"></div>
+		</div>
+		<script src="/js/global.min.js?cs=d7214789dd8e192ee6ed619f1222619285a37b784410f99ce20e51d46524f1e0" async defer></script>
+
+							<script type="text/javascript">window.defaultGeoLocation = [48.3312,18.1315]</script>
+				<script src="/js/iradar.min.js?cs=530d8eceb23c8725f1fe9e31a6bc42d685a37b784410f99ce20e51d46524f1e0" async defer></script>
+						<link href="/css/popular-news.min.css?cs=f205a953eab0dd7988fab000dabc655685a37b784410f99ce20e51d46524f1e0" rel="stylesheet">
+				<script src="/js/popular-news.min.js?cs=b77cb944d7989c503226edc3796bcc8f85a37b784410f99ce20e51d46524f1e0" async defer></script>
+	
+
+<style>
+	/* cyrillic-ext */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvvywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+	}
+	/* cyrillic */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvmywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+	}
+	/* greek-ext */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvuywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+1F00-1FFF;
+	}
+	/* greek */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvhywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+	}
+	/* vietnamese */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvtywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+	}
+	/* latin-ext */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcvsywyz8ua3j58.woff2) format('woff2');
+		unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+	}
+	/* latin */
+	@font-face {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400 700;
+		font-display: swap;
+		src: url(/fonts/7811da267b/sinterv18ucco3fwrk3iltcviywyz8ua3.woff2) format('woff2');
+		unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+	}
+</style>
+
+
+
+
+<script type="application/ld+json">{"@context":"http:\/\/schema.org","@type":"Organization","sameAs":["https:\/\/www.facebook.com\/imeteo","https:\/\/www.instagram.com\/imeteo.sk\/","https:\/\/t.me\/imeteo","https:\/\/news.google.com\/s\/CBIw-5Pc5UI?sceid=SK:sk&r=11&oc=1","https:\/\/www.imeteo.sk\/rss\/news"],"name":"iMeteo.sk","url":"https:\/\/www.imeteo.sk","logo":{"@type":"ImageObject","url":"https:\/\/www.imeteo.sk\/images\/logo.png","caption":"iMeteo.sk"}}</script>
+<script type="application/ld+json">{"@context":"https:\/\/schema.org","@type":"ItemList","itemListElement":[{"@type":"SiteNavigationElement","position":1,"name":"Domov","description":"Domovská stránka","url":"https:\/\/www.imeteo.sk"},{"@type":"SiteNavigationElement","position":2,"name":"Predpoveď","description":"Predpoveď počasia pre Slovensko na dnes a nasledujúce dni. Podrobné počasie pre celé územie a predpoveď na mape","url":"https:\/\/www.imeteo.sk\/pocasie"},{"@type":"SiteNavigationElement","position":3,"name":"iRadar","description":"Kde sú zrážky ? Zistite stav aktuálnej polohy zrážok na mape. Meteoradar s rozložením dažďa, snehu a detekcia bleskov","url":"https:\/\/www.imeteo.sk\/iradar"},{"@type":"SiteNavigationElement","position":4,"name":"Modely","description":"Meteorologické modely","url":"https:\/\/www.imeteo.sk\/model"},{"@type":"SiteNavigationElement","position":5,"name":"MeteoWarning","description":"Meteorologické výstrahy počasia na očakávané nebezpečné javy v počasí. Výstraha pred počasím pre celé územie Slovenska","url":"https:\/\/www.imeteo.sk\/vystrahy"},{"@type":"SiteNavigationElement","position":6,"name":"Búrky","description":"Aktuálne a historický záznam úderov bleskov na území Slovenska a v blízkom okolí.","url":"https:\/\/www.imeteo.sk\/burky"},{"@type":"SiteNavigationElement","position":7,"name":"Kontakt a reklama","description":"Kontakt a reklama","url":"https:\/\/www.imeteo.sk\/kontakt-a-reklama"},{"@type":"SiteNavigationElement","position":8,"name":"Počasie pre Váš web","description":"Počasie, ktoré si môžete vložiť na svoj vlastný web","url":"https:\/\/www.imeteo.sk\/pocasie-pre-vas-web"},{"@type":"SiteNavigationElement","position":9,"name":"O cookies","description":"Informácie o cookies","url":"https:\/\/www.imeteo.sk\/o-cookies"},{"@type":"SiteNavigationElement","position":10,"name":"Počasie na 45 dní","description":"Dlhodobá predpoveď počasia pre územie Slovenska na dnešný deň","url":"https:\/\/www.imeteo.sk\/pocasie-na-30-dni"}]}</script>
+
+			<!-- (C)2000-2022 Gemius SA - gemiusPrism  / imeteo.sk/Ostatne -->
+		<script type="text/plain" class="cmplazyload" data-cmp-vendor="s133">
+		<!--//--><![CDATA[//><!--
+		var pp_gemius_identifier = 'nc07_btGXCbz_GBog0Di9GZV.oiZZ4bQN2rqLcPdIjr.N7';
+		var pp_gemius_use_cmp = true;
+		var pp_gemius_init_timeout = 1000;
+		// lines below shouldn't be edited
+		function gemius_pending(i) { window[i] = window[i] || function() {var x = window[i+'_pdata'] = window[i+'_pdata'] || []; x[x.length]=arguments;};};
+		gemius_pending('gemius_hit'); gemius_pending('gemius_event'); gemius_pending('gemius_init'); gemius_pending('pp_gemius_hit'); gemius_pending('pp_gemius_event'); gemius_pending('pp_gemius_init');
+		(function(d,t) {try {var gt=d.createElement(t),s=d.getElementsByTagName(t)[0],l='http'+((location.protocol=='https:')?'s':''); gt.setAttribute('async','async');
+		gt.setAttribute('defer','defer'); gt.src=l+'://gask.hit.gemius.pl/xgemius.js'; s.parentNode.insertBefore(gt,s);} catch (e) {}})(document,'script');
+		//--><!]]>
+		</script>
+	
+<script type="text/javascript">loadYieldAds();</script>
+
+	<script type="text/javascript" src="//delivery.r2b2.cz/get/ma.imeteo.sk/generic/fixed"></script>
+
+<script type="text/plain" class="cmplazyload" data-cmp-vendor="s1">window.addEventListener('load', function(){(adsbygoogle = window.adsbygoogle || []).push({});});</script>
+	</body>
 </html>
