@@ -2,111 +2,58 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok</title>
+  <title>Radar zrážok – Slovensko</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#111}
-    #controls {
-      position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-      background:#072C4E;padding:8px 14px;border-radius:20px;
-      display:flex;gap:8px;z-index:9999
+    html, body, #map {
+      height:100%;
+      width:100%;
+      margin:0;
+      padding:0;
+      background:#111;
     }
-    #controls button {
-      background:#0D3F73;border:none;width:40px;height:40px;
-      border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center
-    }
-    #controls img {width:20px;height:20px;filter:invert(1)}
-    #timeBox {
-      position:fixed;bottom:25px;left:50%;transform:translateX(-50%);
-      background:#072C4E;color:#fff;padding:5px 15px;border-radius:12px;
-      font:16px Arial,sans-serif;z-index:9999
-    }
-    #attribution {
-      position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.6);
-      color:#ccc;padding:2px 5px;font:10px Arial,sans-serif;z-index:9999
-    }
-    #attribution a {color:#66b3ff;text-decoration:none}
-    .city-label {color:#fff;font:11px Arial,sans-serif;text-shadow:1px 1px 2px #000}
-    .leaflet-container {background:#111}
-    .leaflet-tile {background:#111}
   </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="controls">
-  <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
-  <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
-  <button id="next"><img src="https://img.icons8.com/ios-filled/50/fast-forward.png"></button>
-  <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
-</div>
-<div id="timeBox">Načítavam čas...</div>
-<div id="attribution">
-  © <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> &amp;
-  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
-</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const MAP_BOUNDS=[[46.9,15.8],[49.8,23.0]]
-  const savedPos=JSON.parse(localStorage.getItem("mapPos"))||null
   const map=L.map('map',{
     maxBounds:MAP_BOUNDS,
     maxBoundsViscosity:1,
     noWrap:true,
     minZoom:6,
-    maxZoom:12,
-    preferCanvas:true,
-    zoomAnimation:true
-  })
-  if(savedPos){map.setView(savedPos.center,savedPos.zoom)}else{map.fitBounds(MAP_BOUNDS)}
+    maxZoom:12
+  }).fitBounds(MAP_BOUNDS)
+
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',maxZoom:12,minZoom:6,noWrap:true,detectRetina:true
+    subdomains:'abcd',
+    maxZoom:12,
+    minZoom:6,
+    noWrap:true
   }).addTo(map)
+
   fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
-    L.geoJSON(d,{style:{color:"#00bfff",weight:1,fillOpacity:0}}).addTo(map)
+    L.geoJSON(d,{style:{color:"#00bfff",weight:1.2,fillOpacity:0}}).addTo(map)
   })
-  fetch("https://overpass-api.de/api/interpreter?data=[out:json];area[name='Slovakia']->.a;(node[place~'city|town|village'](area.a););out;")
-    .then(r=>r.json()).then(data=>{
-      data.elements.forEach(e=>{
-        if(e.lat&&e.lon&&e.tags&&e.tags.name){
-          L.circleMarker([e.lat,e.lon],{radius:2.5,color:"#fff",fillColor:"#fff",fillOpacity:1})
-            .addTo(map)
-            .bindTooltip(e.tags.name,{permanent:true,direction:"right",className:"city-label"})
-        }
-      })
-    })
-  let radarFrames=[],radarLayers=[],currentIndex=0,playInterval=null
-  const timeBox=document.getElementById("timeBox")
-  function formatDate(t){
-    const d=new Date(t*1000),days=["NE","PO","UT","ST","ŠT","PI","SO"]
-    return`${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-  }
+
+  let radarFrames=[],radarLayers=[],currentIndex=0
   function fadeToFrame(i){
     radarLayers.forEach((l,x)=>l.setOpacity(x===i?0.8:0))
-    timeBox.textContent=formatDate(radarFrames[i].time)
-    localStorage.setItem("currentFrame",i)
   }
   function loadRadar(){
     radarLayers.forEach(l=>map.removeLayer(l));radarLayers=[]
     fetch("https://api.rainviewer.com/public/weather-maps.json").then(r=>r.json()).then(d=>{
       radarFrames=d.radar.past.concat(d.radar.nowcast)
-      currentIndex=localStorage.getItem("currentFrame")?parseInt(localStorage.getItem("currentFrame")):d.radar.past.length-1
+      currentIndex=d.radar.past.length-1
       radarFrames.forEach((f,i)=>{
         const layer=L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/4/1_1.png`,
         {opacity:0,noWrap:true}).addTo(map);radarLayers[i]=layer})
-      fadeToFrame(currentIndex)})
+      fadeToFrame(currentIndex)
+    })
   }
   loadRadar()
-  back.onclick=()=>{currentIndex=(currentIndex-1+radarFrames.length)%radarFrames.length;fadeToFrame(currentIndex)}
-  next.onclick=()=>{currentIndex=(currentIndex+1)%radarFrames.length;fadeToFrame(currentIndex)}
-  play.onclick=()=>{
-    if(playInterval){clearInterval(playInterval);playInterval=null;playIcon.src="https://img.icons8.com/ios-filled/50/play.png"}
-    else{playInterval=setInterval(()=>{currentIndex=(currentIndex+1)%radarFrames.length;fadeToFrame(currentIndex)},500);
-      playIcon.src="https://img.icons8.com/ios-filled/50/pause.png"}
-  }
-  refresh.onclick=()=>loadRadar()
-  map.on("moveend zoomend",()=>{
-    localStorage.setItem("mapPos",JSON.stringify({center:map.getCenter(),zoom:map.getZoom()}))
-  })
 </script>
 </body>
 </html>
