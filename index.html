@@ -1,114 +1,146 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radarové informácie s RainViewer API | MeteoPočasie.sk</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <style>
-        html, body { margin:0; padding:0; height:100%; }
-        #map { width:100%; height:100%; }
-        .controls { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000;
-            background: rgba(255,255,255,0.8); padding:10px; border-radius:8px; display:flex; gap:10px; }
-        .controls button, .controls select { padding:8px; border:none; border-radius:4px; cursor:pointer; }
-        #timestamp { position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-            background:rgba(0,0,0,0.5); color:#fff; padding:4px 8px; border-radius:4px; font-size:12px; z-index:1000; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Radarové zrážky (RainViewer) | Meteo</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  />
+  <style>
+    body, html { margin:0; padding:0; height:100%; }
+    #map { width:100%; height:100%; }
+    .controls {
+      position:absolute;
+      top:10px; left:50%;
+      transform:translateX(-50%);
+      z-index:1000;
+      background: rgba(255,255,255,0.8);
+      padding:10px;
+      border-radius:8px;
+      display:flex;
+      gap:8px;
+    }
+    .controls button, .controls select {
+      padding:6px 10px;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:14px;
+    }
+    #timestamp {
+      position:absolute;
+      bottom:12px; left:50%;
+      transform:translateX(-50%);
+      z-index:1000;
+      background:rgba(0,0,0,0.6);
+      color:#fff;
+      padding:4px 8px;
+      border-radius:4px;
+      font-size:12px;
+    }
+  </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="controls">
-        <button id="prev"><i class="fas fa-backward"></i></button>
-        <button id="play"><i class="fas fa-play"></i></button>
-        <button id="next"><i class="fas fa-forward"></i></button>
-        <select id="overlaySelect">
-            <option value="radar">Radar (zrážky)</option>
-            <option value="satellite">Satellite</option>
-        </select>
-    </div>
-    <div id="timestamp">Načítavam...</div>
+  <div id="map"></div>
+  <div class="controls">
+    <button id="prev"><i class="fas fa-backward"></i> </button>
+    <button id="play"><i class="fas fa-play"></i> </button>
+    <button id="next"><i class="fas fa-forward"></i> </button>
+    <select id="overlaySelect">
+      <option value="radar">Zrážky</option>
+      <option value="snow">Sneh</option>
+    </select>
+  </div>
+  <div id="timestamp">Načítavam…</div>
 
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script>
-        // Inicializácia mapy
-        const map = L.map('map').setView([48.1486, 17.1077], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <!-- Font Awesome (na ikony) -->
+  <script src="https://kit.fontawesome.com/a4130fa7fd.js" crossorigin="anonymous"></script>
 
-        const API_URL = 'https://api.rainviewer.com/public/weather-maps.json';
-        let dataAPI, frames = [], current = 0, timer = null, layer;
+  <script>
+    const map = L.map('map').setView([48.15, 17.11], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
 
-        // Načítanie dát z RainViewer API
-        fetch(API_URL)
-            .then(res => res.json())
-            .then(json => {
-                dataAPI = json;
-                updateFrames();
-                initControls();
-                showFrame(0);
-            })
-            .catch(err => console.error('Chyba pri načítaní API:', err));
+    // Premenné animácie
+    let frames = [], current = 0, timer = null, overlayLayer;
+    let apiData;
 
-        // Zostavenie rámcov podľa vrstvy
-        function updateFrames() {
-            const type = document.getElementById('overlaySelect').value;
-            if (type === 'radar') {
-                // radar frames: past + nowcast
-                frames = [...dataAPI.radar.past, ...dataAPI.radar.nowcast];
-            } else {
-                // satellite infrared
-                frames = dataAPI.satellite.infrared;
-            }
-            current = 0;
-        }
+    // 1) Stiahneme JSON s metadátami
+    fetch('https://api.rainviewer.com/public/maps.json')
+      .then(r => r.json())
+      .then(data => {
+        apiData = data;
+        buildFrameList();      // pripraviť pole pre vybranú vrstvu
+        initControls();        // naviazať tlačidlá
+        showFrame(0);          // začať na prvom frame
+      })
+      .catch(console.error);
 
-        // Iniciácia ovládacích prvkov
-        function initControls() {
-            document.getElementById('prev').onclick = () => changeFrame(-1);
-            document.getElementById('next').onclick = () => changeFrame(1);
-            document.getElementById('play').onclick = togglePlay;
-            document.getElementById('overlaySelect').onchange = () => {
-                clearInterval(timer);
-                timer = null;
-                document.getElementById('play').innerHTML = '<i class="fas fa-play"></i>';
-                updateFrames();
-                showFrame(0);
-            };
-        }
+    function buildFrameList() {
+      const sel = document.getElementById('overlaySelect').value;
+      // vyberieme buď data.radar (zrážky) alebo data.snow (sneh)
+      const list = sel === 'snow' ? apiData.snow : apiData.radar;
+      // každý frame si urobíme {time, url}
+      frames = list.map(f => ({
+        time: f.time,
+        url: apiData.host + f.path.replace('rain', 'rainbow') 
+        // v path môžete priamo editovať,
+        // alebo ak je už rainbow, tak toto netreba
+      }));
+    }
 
-        // Zobrazenie konkrétneho rámca
-        function showFrame(idx) {
-            if (layer) map.removeLayer(layer);
-            current = (idx + frames.length) % frames.length;
-            const f = frames[current];
-            const host = dataAPI.host;
-            const path = f.path;
-            // URL pre dlaždice
-            const url = `${host}${path}/256/{z}/{x}/{y}.png`;
-            layer = L.tileLayer(url, { opacity: 0.6, attribution: 'Radar data &copy; RainViewer.com' }).addTo(map);
-            // Zobrazenie časovej značky
-            document.getElementById('timestamp').innerText = new Date(f.time * 1000).toLocaleString('sk');
-        }
+    function initControls() {
+      document.getElementById('prev').onclick = () => changeFrame(-1);
+      document.getElementById('next').onclick = () => changeFrame(1);
+      document.getElementById('play').onclick = togglePlay;
+      document.getElementById('overlaySelect').onchange = () => {
+        clearInterval(timer);
+        timer = null;
+        document.getElementById('play').innerHTML = '<i class="fas fa-play"></i>';
+        current = 0;
+        if (overlayLayer) map.removeLayer(overlayLayer);
+        buildFrameList();
+        showFrame(0);
+      };
+    }
 
-        // Zmena rámca
-        function changeFrame(delta) {
-            showFrame(current + delta);
-        }
+    function showFrame(idx) {
+      // obeháme index
+      current = (idx + frames.length) % frames.length;
+      const frame = frames[current];
+      // odstránime predchádzajúcu vrstvu
+      if (overlayLayer) map.removeLayer(overlayLayer);
+      // pridáme novú
+      overlayLayer = L.tileLayer(frame.url, {
+        tileSize: 256,
+        opacity: 0.6,
+        zIndex: 500
+      }).addTo(map);
+      // timestamp
+      document.getElementById('timestamp').innerText = 
+        new Date(frame.time * 1000).toLocaleString('sk');
+    }
 
-        // Prehrávanie animácie
-        function togglePlay() {
-            const btn = document.getElementById('play');
-            if (timer) {
-                clearInterval(timer);
-                timer = null;
-                btn.innerHTML = '<i class="fas fa-play"></i>';
-            } else {
-                timer = setInterval(() => showFrame(current + 1), 1000);
-                btn.innerHTML = '<i class="fas fa-pause"></i>';
-            }
-        }
-    </script>
+    function changeFrame(delta) {
+      showFrame(current + delta);
+    }
+
+    function togglePlay() {
+      const btn = document.getElementById('play');
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+      } else {
+        timer = setInterval(() => showFrame(current + 1), 1000);
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+      }
+    }
+  </script>
 </body>
 </html>
