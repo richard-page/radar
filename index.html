@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok</title>
+  <title>Radar zrážok – Naživo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -14,6 +14,38 @@
     .leaflet-control-zoom,
     .leaflet-control-attribution {
       display: none;
+    }
+    #liveBadge {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: red;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      padding: 6px 14px;
+      border-radius: 25px;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+    #liveBadge::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0% {opacity:1}
+      50% {opacity:0.2}
+      100% {opacity:1}
     }
     #controls {
       position: fixed;
@@ -36,10 +68,10 @@
       height: 45px;
       border-radius: 50%;
       cursor: pointer;
-      transition: background 0.2s;
       display: flex;
       justify-content: center;
       align-items: center;
+      transition: background 0.2s;
     }
     #controls button:hover {
       background: #155A9C;
@@ -58,34 +90,16 @@
       color: white;
       padding: 8px 20px;
       border-radius: 15px;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
       z-index: 9999;
+      font-family: Arial, sans-serif;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      font-family: Arial, sans-serif;
-    }
-    #attribution {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      background: rgba(0,0,0,0.6);
-      color: #ccc;
-      padding: 2px 6px;
-      border-top-left-radius: 5px;
-      font-size: 11px;
-      font-family: Arial, sans-serif;
-      z-index: 9999;
-    }
-    #attribution a {
-      color: #66b3ff;
-      text-decoration: none;
-    }
-    #attribution a:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
 <body>
+<div id="liveBadge">NAŽIVO</div>
 <div id="map"></div>
 
 <div id="controls">
@@ -96,33 +110,26 @@
 </div>
 <div id="timeBox">Načítavam čas...</div>
 
-<div id="attribution">
-  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &amp;
-  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
-</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
-
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
-    preferCanvas: true,
-    updateWhenZooming: true,
-    updateWhenIdle: false,
-    inertia: true
+    updateWhenIdle: true,
+    updateWhenZooming: false
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    keepBuffer: 16
+    keepBuffer: 6
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
+    pane: 'markerPane',
     zIndex: 999
   }).addTo(map);
 
@@ -145,9 +152,7 @@
   }
 
   function fadeToFrame(index) {
-    radarLayers.forEach((layer, i) => {
-      layer.setOpacity(i === index ? 0.8 : 0);
-    });
+    radarLayers.forEach((layer, i) => layer.setOpacity(i === index ? 0.8 : 0));
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
@@ -159,17 +164,13 @@
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
         currentIndex = data.radar.past.length - 1;
-
         radarFrames.forEach((frame, i) => {
-          if (i > radarFrames.length - 11) {
-            const layer = L.tileLayer(
-              `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-              {opacity: 0, keepBuffer: 16}
-            ).addTo(map);
-            radarLayers[i] = layer;
-          }
+          const layer = L.tileLayer(
+            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
+            {opacity: 0, zIndex: 500}
+          ).addTo(map);
+          radarLayers[i] = layer;
         });
-
         fadeToFrame(currentIndex);
       });
   }
@@ -180,12 +181,10 @@
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
   };
-
   document.getElementById("next").onclick = () => {
     currentIndex = (currentIndex + 1) % radarFrames.length;
     fadeToFrame(currentIndex);
   };
-
   document.getElementById("play").onclick = () => {
     if (playInterval) {
       clearInterval(playInterval);
@@ -195,11 +194,10 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         fadeToFrame(currentIndex);
-      }, 600);
+      }, 800);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
-
   document.getElementById("refresh").onclick = () => loadRadar();
 
   map.on("moveend", () => {
