@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko (optimalizované)</title>
+  <title>Radar zrážok – Slovensko a okolie</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,23 +103,24 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const SLOVAK_BOUNDS = [
-    [47.7, 16.6], // juhozápad
-    [49.7, 22.5]  // severovýchod
+  // ✅ Presný rozsah (ako na tvojej fotke)
+  const MAP_BOUNDS = [
+    [45.8, 14.8],  // juhozápad – Slovinsko/Rakúsko
+    [51.0, 24.5]   // severovýchod – Poľsko/Ukrajina
   ];
 
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
-    maxBounds: SLOVAK_BOUNDS,
+    maxBounds: MAP_BOUNDS,
     maxBoundsViscosity: 1.0,
     noWrap: true
-  }).fitBounds(SLOVAK_BOUNDS);
+  }).fitBounds(MAP_BOUNDS);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 9,
-    minZoom: 7,
+    maxZoom: 8, // nepotrebujeme väčší – zrýchli načítanie
+    minZoom: 6,
     noWrap: true
   }).addTo(map);
 
@@ -167,7 +168,7 @@
             {
               opacity: 0,
               noWrap: true,
-              bounds: SLOVAK_BOUNDS
+              bounds: MAP_BOUNDS
             }
           ).addTo(map);
           radarLayers[i] = layer;
@@ -179,6 +180,7 @@
 
   loadRadar();
 
+  // ✅ Ovládanie
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
