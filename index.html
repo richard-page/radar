@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko a okolie</title>
+  <title>Radar zrážok – Slovensko (opravené)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -10,6 +10,7 @@
       width: 100%;
       margin: 0;
       padding: 0;
+      background: #000; /* ✅ už nikdy biela */
     }
     .leaflet-control-zoom,
     .leaflet-control-attribution {
@@ -103,7 +104,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Presný rozsah (ako na tvojej fotke)
   const MAP_BOUNDS = [
     [45.8, 14.8],  // juhozápad – Slovinsko/Rakúsko
     [51.0, 24.5]   // severovýchod – Poľsko/Ukrajina
@@ -117,9 +117,10 @@
     noWrap: true
   }).fitBounds(MAP_BOUNDS);
 
+  // ✅ Podkladová mapa (tmavá) – žiadna biela
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 8, // nepotrebujeme väčší – zrýchli načítanie
+    maxZoom: 8,
     minZoom: 6,
     noWrap: true
   }).addTo(map);
@@ -164,11 +165,14 @@
 
         radarFrames.forEach((frame, i) => {
           const layer = L.tileLayer(
+            // ✅ Transparentná verzia radarových dlaždíc – nič biele mimo zrážok
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
             {
               opacity: 0,
               noWrap: true,
-              bounds: MAP_BOUNDS
+              bounds: MAP_BOUNDS,
+              tileSize: 256,
+              zIndex: 200
             }
           ).addTo(map);
           radarLayers[i] = layer;
