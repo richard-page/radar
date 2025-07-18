@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko (opravené)</title>
+  <title>Radar zrážok – Slovensko a okolie (opravené)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -10,7 +10,7 @@
       width: 100%;
       margin: 0;
       padding: 0;
-      background: #000; /* ✅ už nikdy biela */
+      background: #000;
     }
     .leaflet-control-zoom,
     .leaflet-control-attribution {
@@ -117,7 +117,7 @@
     noWrap: true
   }).fitBounds(MAP_BOUNDS);
 
-  // ✅ Podkladová mapa (tmavá) – žiadna biela
+  // ✅ Podkladová mapa
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 8,
@@ -153,6 +153,32 @@
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
+  // ✅ Canvas maska (zobrazí len v definovanom rozsahu, mimo nič)
+  function createMaskedLayer(frame) {
+    return L.tileLayer.canvas({
+      async: true,
+      noWrap: true,
+      bounds: MAP_BOUNDS,
+      async drawTile: function(canvas, tilePoint, zoom) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.crossOrigin = '';
+        img.src = `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/${zoom}/${tilePoint.x}/${tilePoint.y}/4/1_1.png`;
+
+        img.onload = () => {
+          ctx.clearRect(0, 0, 256, 256);
+          ctx.drawImage(img, 0, 0);
+
+          // ✅ Orezanie mimo rozsahu
+          ctx.globalCompositeOperation = 'destination-in';
+          ctx.fillStyle = 'rgba(255,255,255,1)';
+          ctx.fillRect(0, 0, 256, 256);
+          ctx.globalCompositeOperation = 'source-over';
+        };
+      }
+    });
+  }
+
   function loadRadar() {
     radarLayers.forEach(layer => map.removeLayer(layer));
     radarLayers = [];
@@ -164,17 +190,8 @@
         currentIndex = data.radar.past.length - 1;
 
         radarFrames.forEach((frame, i) => {
-          const layer = L.tileLayer(
-            // ✅ Transparentná verzia radarových dlaždíc – nič biele mimo zrážok
-            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {
-              opacity: 0,
-              noWrap: true,
-              bounds: MAP_BOUNDS,
-              tileSize: 256,
-              zIndex: 200
-            }
-          ).addTo(map);
+          const layer = createMaskedLayer(frame).addTo(map);
+          layer.setOpacity(0);
           radarLayers[i] = layer;
         });
 
@@ -184,7 +201,6 @@
 
   loadRadar();
 
-  // ✅ Ovládanie
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
