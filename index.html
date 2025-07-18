@@ -1,51 +1,30 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MapLibre GL JS Mapa</title>
-  <!-- MapLibre GL CSS -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MapLibre GL JS – Dark Mapa</title>
   <link
     href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
     rel="stylesheet"
   />
   <style>
-    /* Celá stránka, bez odsadenia */
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-    /* Kontajner pre mapu */
-    #map {
-      width: 100%;
-      height: 100%;
-    }
+    html, body { margin:0; padding:0; height:100%; }
+    #map { width:100%; height:100%; }
   </style>
 </head>
 <body>
-  <!-- Kontajner, do ktorého sa vloží mapa -->
   <div id="map"></div>
-
-  <!-- MapLibre GL JS -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-    // Inicializácia mapy
     const map = new maplibregl.Map({
-      container: 'map', // ID div-u
-      style: 'https://demotiles.maplibre.org/style.json', // štýl dlaždíc
-      center: [17.1077, 48.1486], // [longitude, latitude] – Bratislava
-      zoom: 12 // počiatočné priblíženie
+      container: 'map',
+      style: 'https://demotiles.maplibre.org/style-dark.json',
+      center: [11.5755, 48.1374], // Mníchov
+      zoom: 9
     });
-
-    // Pridanie navigačných ovládacích prvkov (zoom + orientácia)
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    // Pridanie mierky
-    map.addControl(new maplibregl.ScaleControl({
-      maxWidth: 100,
-      unit: 'metric'
-    }));
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
   </script>
 </body>
 </html>
