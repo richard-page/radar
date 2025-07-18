@@ -90,7 +90,16 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map', {zoomControl: false, attributionControl: false});
+  const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
+
+  const map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false,
+    preferCanvas: true,
+    zoomAnimation: true,
+    fadeAnimation: false
+  });
+
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14
@@ -102,13 +111,19 @@
     zIndex: 999
   }).addTo(map);
 
+  if (savedPos) {
+    map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+  }
+
   fetch("slovakia_Regions_level_1.geojson")
     .then(r => r.json())
     .then(data => {
       const geo = L.geoJSON(data, {
         style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
       }).addTo(map);
-      map.fitBounds(geo.getBounds().pad(0.25));
+      if (!savedPos) {
+        map.fitBounds(geo.getBounds().pad(0.25));
+      }
     });
 
   let radarFrames = [];
@@ -141,7 +156,7 @@
         radarFrames.forEach((frame, i) => {
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0}
+            {opacity: 0, keepBuffer: 4, updateWhenIdle: true}
           ).addTo(map);
           radarLayers[i] = layer;
         });
@@ -170,12 +185,21 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         fadeToFrame(currentIndex);
-      }, 500);
+      }, 400);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
 
   document.getElementById("refresh").onclick = () => loadRadar();
+
+  map.on("moveend", () => {
+    const center = map.getCenter();
+    localStorage.setItem("mapPos", JSON.stringify({
+      lat: center.lat,
+      lng: center.lng,
+      zoom: map.getZoom()
+    }));
+  });
 </script>
 </body>
 </html>
