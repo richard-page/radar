@@ -1,127 +1,51 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <title>Radar zrážok</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MapLibre GL JS Mapa</title>
+  <!-- MapLibre GL CSS -->
+  <link
+    href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
+    rel="stylesheet"
+  />
   <style>
-    html, body, #map {height:100%;width:100%;margin:0;padding:0;background:#111}
-    #controls {
-      position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
-      background:#072C4E;padding:6px 12px;border-radius:16px;
-      display:flex;gap:6px;z-index:9999
+    /* Celá stránka, bez odsadenia */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
     }
-    #controls button {
-      background:#0D3F73;border:none;width:36px;height:36px;
-      border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center
+    /* Kontajner pre mapu */
+    #map {
+      width: 100%;
+      height: 100%;
     }
-    #controls img {width:18px;height:18px;filter:invert(1)}
-    #timeBox {
-      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-      background:#072C4E;color:#fff;padding:4px 12px;border-radius:10px;
-      font:15px Arial,sans-serif;z-index:9999
-    }
-    #attribution {
-      position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.6);
-      color:#ccc;padding:2px 5px;font:10px Arial,sans-serif;z-index:9999
-    }
-    #attribution a {color:#66b3ff;text-decoration:none}
-    .leaflet-control-attribution, .leaflet-control {display:none !important}
   </style>
 </head>
 <body>
-<div id="map"></div>
-<div id="controls">
-  <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
-  <button id="play"><img id="playIcon" src="https://img.icons8.com/ios-filled/50/play.png"></button>
-  <button id="next"><img src="https://img.icons8.com/ios-filled/50/fast-forward.png"></button>
-  <button id="refresh"><img src="https://img.icons8.com/ios-filled/50/synchronize.png"></button>
-</div>
-<div id="timeBox">Načítavam čas...</div>
-<div id="attribution">
-  Údaje © <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> &amp;
-  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  const savedPos=JSON.parse(localStorage.getItem("mapPos"))||null
-  const savedFrame=localStorage.getItem("currentFrame")?parseInt(localStorage.getItem("currentFrame")):null
+  <!-- Kontajner, do ktorého sa vloží mapa -->
+  <div id="map"></div>
 
-  const map=L.map('map',{
-    noWrap:true,
-    minZoom:5,
-    maxZoom:12,
-    attributionControl:false
-  })
+  <!-- MapLibre GL JS -->
+  <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <script>
+    // Inicializácia mapy
+    const map = new maplibregl.Map({
+      container: 'map', // ID div-u
+      style: 'https://demotiles.maplibre.org/style.json', // štýl dlaždíc
+      center: [17.1077, 48.1486], // [longitude, latitude] – Bratislava
+      zoom: 12 // počiatočné priblíženie
+    });
 
-  if(savedPos){
-    map.setView(savedPos.center,savedPos.zoom)
-  } else {
-    map.setView([48.4097,18.5197],7)
-  }
+    // Pridanie navigačných ovládacích prvkov (zoom + orientácia)
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',
-    maxZoom:12,
-    minZoom:5,
-    noWrap:true
-  }).addTo(map)
-
-  fetch("slovakia_Regions_level_1.geojson").then(r=>r.json()).then(d=>{
-    L.geoJSON(d,{style:{color:"#00bfff",weight:1.5,fillOpacity:0}}).addTo(map)
-  })
-
-  let radarFrames=[],radarLayers=[],currentIndex=0,playInterval=null
-  const timeBox=document.getElementById("timeBox")
-
-  function formatDate(t){
-    const d=new Date(t*1000),days=["NE","PO","UT","ST","ŠT","PI","SO"]
-    return`${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-  }
-
-  function fadeToFrame(i){
-    radarLayers.forEach((l,x)=>l.setOpacity(x===i?0.8:0))
-    timeBox.textContent=formatDate(radarFrames[i].time)
-    localStorage.setItem("currentFrame",i)
-  }
-
-  function loadRadar(){
-    radarLayers.forEach(l=>map.removeLayer(l));radarLayers=[]
-    fetch("https://api.rainviewer.com/public/weather-maps.json").then(r=>r.json()).then(d=>{
-      radarFrames=d.radar.past.concat(d.radar.nowcast)
-      currentIndex=savedFrame!==null?savedFrame:d.radar.past.length-1
-      radarFrames.forEach((f,i)=>{
-        const layer=L.tileLayer(
-          `https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/4/1_1.png`,
-          {opacity:0,noWrap:true}
-        ).addTo(map)
-        radarLayers[i]=layer
-      })
-      fadeToFrame(currentIndex)
-    })
-  }
-
-  loadRadar()
-
-  back.onclick=()=>{currentIndex=(currentIndex-1+radarFrames.length)%radarFrames.length;fadeToFrame(currentIndex)}
-  next.onclick=()=>{currentIndex=(currentIndex+1)%radarFrames.length;fadeToFrame(currentIndex)}
-  play.onclick=()=>{
-    if(playInterval){
-      clearInterval(playInterval);playInterval=null;
-      playIcon.src="https://img.icons8.com/ios-filled/50/play.png"
-    } else {
-      playInterval=setInterval(()=>{
-        currentIndex=(currentIndex+1)%radarFrames.length
-        fadeToFrame(currentIndex)
-      },500)
-      playIcon.src="https://img.icons8.com/ios-filled/50/pause.png"
-    }
-  }
-  refresh.onclick=()=>loadRadar()
-
-  map.on("moveend zoomend",()=>{
-    localStorage.setItem("mapPos",JSON.stringify({center:map.getCenter(),zoom:map.getZoom()}))
-  })
-</script>
+    // Pridanie mierky
+    map.addControl(new maplibregl.ScaleControl({
+      maxWidth: 100,
+      unit: 'metric'
+    }));
+  </script>
 </body>
 </html>
