@@ -45,9 +45,9 @@
 <body>
   <div id="map"></div>
   <div class="controls">
-    <button id="prev"><i class="fas fa-backward"></i> </button>
-    <button id="play"><i class="fas fa-play"></i> </button>
-    <button id="next"><i class="fas fa-forward"></i> </button>
+    <button id="prev"><i class="fas fa-backward"></i></button>
+    <button id="play"><i class="fas fa-play"></i></button>
+    <button id="next"><i class="fas fa-forward"></i></button>
     <select id="overlaySelect">
       <option value="radar">Zrážky</option>
       <option value="snow">Sneh</option>
@@ -55,42 +55,37 @@
   </div>
   <div id="timestamp">Načítavam…</div>
 
-  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  <!-- Font Awesome (na ikony) -->
   <script src="https://kit.fontawesome.com/a4130fa7fd.js" crossorigin="anonymous"></script>
-
   <script>
     const map = L.map('map').setView([48.15, 17.11], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    // Premenné animácie
-    let frames = [], current = 0, timer = null, overlayLayer;
-    let apiData;
+    let apiData, frames = [], current = 0, timer = null, overlayLayer;
 
-    // 1) Stiahneme JSON s metadátami
+    // 1) Stiahneme JSON
     fetch('https://api.rainviewer.com/public/maps.json')
       .then(r => r.json())
       .then(data => {
         apiData = data;
-        buildFrameList();      // pripraviť pole pre vybranú vrstvu
-        initControls();        // naviazať tlačidlá
-        showFrame(0);          // začať na prvom frame
+        buildFrameList();
+        initControls();
+        showFrame(0);
       })
       .catch(console.error);
 
+    // 2) Z idx selectu vytvoríme pole snímok
     function buildFrameList() {
       const sel = document.getElementById('overlaySelect').value;
-      // vyberieme buď data.radar (zrážky) alebo data.snow (sneh)
-      const list = sel === 'snow' ? apiData.snow : apiData.radar;
-      // každý frame si urobíme {time, url}
+      // vyber minulé + nowcast
+      const section = apiData[sel];
+      const list = (section.past||[]).concat(section.nowcast||[]);
+      // každý frame má time + url template
       frames = list.map(f => ({
         time: f.time,
-        url: apiData.host + f.path.replace('rain', 'rainbow') 
-        // v path môžete priamo editovať,
-        // alebo ak je už rainbow, tak toto netreba
+        url: apiData.host + f.path + '/{z}/{x}/{y}.png'
       }));
     }
 
@@ -110,25 +105,20 @@
     }
 
     function showFrame(idx) {
-      // obeháme index
       current = (idx + frames.length) % frames.length;
       const frame = frames[current];
-      // odstránime predchádzajúcu vrstvu
       if (overlayLayer) map.removeLayer(overlayLayer);
-      // pridáme novú
+      // vložíme templated URL dlaždíc
       overlayLayer = L.tileLayer(frame.url, {
         tileSize: 256,
         opacity: 0.6,
         zIndex: 500
       }).addTo(map);
-      // timestamp
-      document.getElementById('timestamp').innerText = 
+      document.getElementById('timestamp').innerText =
         new Date(frame.time * 1000).toLocaleString('sk');
     }
 
-    function changeFrame(delta) {
-      showFrame(current + delta);
-    }
+    function changeFrame(d) { showFrame(current + d); }
 
     function togglePlay() {
       const btn = document.getElementById('play');
