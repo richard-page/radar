@@ -153,6 +153,7 @@
 
   let radarFrames = []
   let radarLayers = []
+  let radarPreloadLayers = []
   let currentIndex = 0
   let playInterval = null
   const timeBox = document.getElementById("timeBox")
@@ -170,9 +171,30 @@
     timeBox.textContent = formatDate(radarFrames[index].time)
   }
 
+  function preloadZoomLevels(framePath) {
+    const baseUrl = `https://tilecache.rainviewer.com/v2/radar/${framePath}/256/{z}/{x}/{y}/4/1_1.png`
+    const currentZoom = map.getZoom()
+    const zoomsToPreload = [currentZoom - 1, currentZoom + 1]
+    zoomsToPreload.forEach(z => {
+      if (z >= 5 && z <= 14) {
+        const tmp = L.tileLayer(baseUrl, {
+          opacity: 0,
+          minZoom: z,
+          maxZoom: z,
+          keepBuffer: 24,
+          updateWhenDragging: true,
+          updateWhenZooming: true
+        }).addTo(map)
+        radarPreloadLayers.push(tmp)
+      }
+    })
+  }
+
   function loadRadar() {
     radarLayers.forEach(layer => map.removeLayer(layer))
+    radarPreloadLayers.forEach(layer => map.removeLayer(layer))
     radarLayers = []
+    radarPreloadLayers = []
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(r => r.json())
       .then(data => {
@@ -193,6 +215,7 @@
           ).addTo(map)
           radarLayers.push(layer)
         })
+        preloadZoomLevels(radarFrames[currentIndex].path)
         showFrame(currentIndex)
       })
   }
