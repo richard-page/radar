@@ -90,6 +90,25 @@
       font-family: Arial, sans-serif;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
+    #attribution {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #ccc;
+      padding: 3px 6px;
+      border-top-left-radius: 5px;
+      font-size: 11px;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+    }
+    #attribution a {
+      color: #66b3ff;
+      text-decoration: none;
+    }
+    #attribution a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -104,6 +123,11 @@
 </div>
 <div id="timeBox">Načítavam čas...</div>
 
+<div id="attribution">
+  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &amp;
+  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
@@ -111,19 +135,21 @@
     zoomControl: false,
     attributionControl: false,
     preferCanvas: true,
+    minZoom: 5,
+    maxZoom: 11,
     updateWhenZooming: true,
     updateWhenIdle: true
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14,
+    maxZoom: 11,
     keepBuffer: 4
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14,
+    maxZoom: 11,
     zIndex: 999
   }).addTo(map);
 
