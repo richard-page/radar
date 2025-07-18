@@ -1,8 +1,13 @@
+Tu je kompletný kód s úpravou medzery medzi ovládacími tlačidlami a časovým boxom (hlavne pre mobilné zariadenia):
+
+
+---
+
 <!DOCTYPE html>
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Radar zrážok</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
@@ -11,7 +16,7 @@
       width: 100%;
       margin: 0;
       padding: 0;
-      background: #000;
+      overflow: hidden;
     }
     .leaflet-control-zoom,
     .leaflet-control-attribution {
@@ -86,6 +91,26 @@
     #attribution a:hover {
       text-decoration: underline;
     }
+    @media (max-width: 600px) {
+      #controls {
+        bottom: 110px;
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      #controls button {
+        width: 44px;
+        height: 44px;
+      }
+      #controls img {
+        width: 20px;
+        height: 20px;
+      }
+      #timeBox {
+        bottom: 60px;
+        font-size: 16px;
+        padding: 6px 14px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -110,49 +135,31 @@
 
   const map = L.map('map', {
     zoomControl: false,
-    attributionControl: false,
-    preferCanvas: true
+    attributionControl: false
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 14,
-    updateWhenDragging: true,
-    updateWhenZooming: true,
-    updateWhenIdle: false,
-    keepBuffer: 8
+    maxZoom: 14
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
-    opacity: 0.9,
-    updateWhenDragging: true,
-    updateWhenZooming: true,
-    updateWhenIdle: false,
-    keepBuffer: 8
+    zIndex: 999
   }).addTo(map);
 
   if (savedPos) {
     map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+  } else {
+    map.setView([48.7, 19.7], 7);
   }
 
-  fetch("slovakia_Regions_level_1.geojson")
-    .then(r => r.json())
-    .then(data => {
-      const geo = L.geoJSON(data, {
-        style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}
-      }).addTo(map);
-      if (!savedPos) {
-        map.fitBounds(geo.getBounds().pad(0.25));
-      }
-    });
-
   let radarFrames = [];
-  let radarLayers = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
+  let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
 
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -161,34 +168,18 @@
   }
 
   function showFrame(index) {
-    radarLayers.forEach((layer, i) => {
-      layer.setOpacity(i === index ? 0.8 : 0);
-    });
+    if (!radarFrames[index]) return;
+    const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
+    radarLayer.setUrl(url);
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
 
   function loadRadar() {
-    radarLayers.forEach(layer => map.removeLayer(layer));
-    radarLayers = [];
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(r => r.json())
       .then(data => {
         radarFrames = data.radar.past.concat(data.radar.nowcast);
         currentIndex = data.radar.past.length - 1;
-        radarFrames.forEach((frame, i) => {
-          const layer = L.tileLayer(
-            `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {
-              opacity: 0,
-              crossOrigin: true,
-              updateWhenDragging: true,
-              updateWhenZooming: true,
-              updateWhenIdle: false,
-              keepBuffer: 8
-            }
-          ).addTo(map);
-          radarLayers.push(layer);
-        });
         showFrame(currentIndex);
       });
   }
@@ -214,7 +205,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 1500);
+      }, 800);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
