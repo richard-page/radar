@@ -107,17 +107,27 @@
 
   const map = L.map('map', {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    zoomAnimation: false,
+    fadeAnimation: false,
+    markerZoomAnimation: false
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 14
-  }).addTo(map);
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+  const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 14,
+    updateWhenIdle: false,
+    updateWhenZooming: true,
+    keepBuffer: 8
+  }).addTo(map);
+
+  const labelLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 14,
+    opacity: 0.9,
+    updateWhenIdle: false,
+    updateWhenZooming: true,
+    keepBuffer: 8,
     zIndex: 999
   }).addTo(map);
 
@@ -166,7 +176,12 @@
         radarFrames.forEach((frame, i) => {
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0, zIndex: 500}
+            {
+              opacity: 0,
+              updateWhenIdle: false,
+              updateWhenZooming: true,
+              keepBuffer: 8
+            }
           ).addTo(map);
           radarLayers[i] = layer;
         });
@@ -195,7 +210,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         fadeToFrame(currentIndex);
-      }, 700);
+      }, 800);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
