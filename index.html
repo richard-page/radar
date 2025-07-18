@@ -160,7 +160,6 @@
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
   let radarLayer = null;
-  let radarLayerNext = null;
   function formatDate(timestamp) {
     const date = new Date(timestamp * 1000);
     const days = ["NE", "PO", "UT", "ST", "ŠT", "PI", "SO"];
@@ -169,24 +168,11 @@
   function showFrame(index) {
     if (!radarFrames[index]) return;
     const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[index].path}/256/{z}/{x}/{y}/4/1_1.png`;
-    if (!radarLayer) {
-      radarLayer = L.tileLayer(url, {opacity: 0.8, crossOrigin: true}).addTo(map);
-    } else {
-      if (radarLayerNext) map.removeLayer(radarLayerNext);
-      radarLayerNext = L.tileLayer(url, {opacity: 0}).addTo(map);
-      let opacity = 0;
-      const fadeInterval = setInterval(() => {
-        opacity += 0.1;
-        radarLayerNext.setOpacity(opacity);
-        radarLayer.setOpacity(0.8 - opacity * 0.8);
-        if (opacity >= 1) {
-          clearInterval(fadeInterval);
-          map.removeLayer(radarLayer);
-          radarLayer = radarLayerNext;
-          radarLayerNext = null;
-        }
-      }, 50);
-    }
+    if (radarLayer) map.removeLayer(radarLayer);
+    radarLayer = L.tileLayer(url, {
+      opacity: 0.8,
+      crossOrigin: true
+    }).addTo(map);
     timeBox.textContent = formatDate(radarFrames[index].time);
   }
   function loadRadar() {
@@ -218,7 +204,7 @@
       playInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % radarFrames.length;
         showFrame(currentIndex);
-      }, 500);
+      }, 600);
       document.getElementById("playIcon").src = "https://img.icons8.com/ios-filled/50/pause.png";
     }
   };
