@@ -54,20 +54,6 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
     }
-    #liveBox {
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: red;
-      color: white;
-      font-weight: bold;
-      font-family: Arial, sans-serif;
-      padding: 4px 10px;
-      border-radius: 12px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.5);
-      z-index: 9999;
-    }
     #attribution {
       position: fixed;
       bottom: 0;
@@ -85,7 +71,6 @@
 </head>
 <body>
 <div id="map"></div>
-<div id="liveBox">● NAŽIVO</div>
 
 <div id="controls">
   <button id="back"><img src="https://img.icons8.com/ios-filled/50/rewind.png"></button>
@@ -103,18 +88,21 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos")) || null;
+
   const map = L.map('map', {
     zoomControl: false,
     attributionControl: false,
-    preferCanvas: true
+    preferCanvas: true,
+    inertia: true,
+    inertiaDeceleration: 4000
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
     maxZoom: 12,
     keepBuffer: 6,
-    updateWhenZooming: false,
-    updateWhenIdle: true
+    updateWhenZooming: true,
+    updateWhenIdle: false
   }).addTo(map);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
@@ -130,7 +118,6 @@
     map.setView([48.7, 19.7], 7);
   }
 
-  // ✅ GEOJSON hranice Slovenska (optimalizované)
   fetch("slovakia_Regions_level_1.geojson")
     .then(r => r.json())
     .then(data => {
@@ -140,7 +127,7 @@
           weight: 1,
           fillOpacity: 0
         },
-        interactive: false // žiadna interakcia, rýchlejšie vykreslenie
+        interactive: false
       }).addTo(map);
     });
 
@@ -174,7 +161,12 @@
         radarFrames.forEach(frame => {
           const layer = L.tileLayer(
             `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/4/1_1.png`,
-            {opacity: 0, zIndex: 500}
+            {
+              opacity: 0,
+              zIndex: 500,
+              updateWhenIdle: false,
+              keepBuffer: 6
+            }
           ).addTo(map);
           radarLayers.push(layer);
         });
