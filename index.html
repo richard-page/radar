@@ -135,7 +135,7 @@
     maxZoom: 14
   }).addTo(map);
 
-  // ✅ Hranice Slovenska + priblíženie optimalizované pre mobily
+  // ✅ Hranice Slovenska
   fetch("slovakia_Regions_level_1.geojson")
     .then(r => r.json())
     .then(data => {
@@ -146,7 +146,7 @@
       map.fitBounds(geo.getBounds().pad(padValue));
     });
 
-  // ✅ Radarové snímky – optimalizované
+  // ✅ Radarové snímky
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
@@ -208,9 +208,9 @@
   };
   document.getElementById("refresh").onclick = () => loadRadar();
 
-  // ✅ Poloha používateľa (📍) – automaticky aj na tlačidlo
+  // ✅ Poloha používateľa s auto-zoomom
   let userMarker = null;
-  function locateUser() {
+  function locateUser(autoZoom = true) {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -223,6 +223,7 @@
             fillOpacity: 1
           }).addTo(map);
           userMarker.bindPopup("📍 Vaša poloha").openPopup();
+          if (autoZoom) map.setView([latitude, longitude], 10); // priblíži na polohu
         },
         (err) => {
           console.warn("Poloha nebola povolená: ", err.message);
@@ -233,9 +234,9 @@
   }
 
   // ✅ Spustí sa hneď pri načítaní
-  locateUser();
-  // ✅ Na vyžiadanie
-  document.getElementById("locate").onclick = () => locateUser();
+  locateUser(true);
+  // ✅ Tlačidlo na opätovné získanie polohy
+  document.getElementById("locate").onclick = () => locateUser(true);
 </script>
 </body>
 </html>
