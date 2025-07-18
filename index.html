@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar zrážok</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <title>Radar zrážok – MapLibre</title>
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     html, body, #map {
       height: 100%;
       width: 100%;
       margin: 0;
       padding: 0;
-    }
-    .leaflet-control-zoom,
-    .leaflet-control-attribution {
-      display: none;
+      background: #000;
     }
     #controls {
       position: fixed;
@@ -64,25 +61,6 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       font-family: Arial, sans-serif;
     }
-    #attribution {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      background: rgba(0,0,0,0.6);
-      color: #ccc;
-      padding: 2px 6px;
-      border-top-left-radius: 5px;
-      font-size: 11px;
-      font-family: Arial, sans-serif;
-      z-index: 9999;
-    }
-    #attribution a {
-      color: #66b3ff;
-      text-decoration: none;
-    }
-    #attribution a:hover {
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body>
@@ -96,35 +74,22 @@
 </div>
 <div id="timeBox">Načítavam čas...</div>
 
-<div id="attribution">
-  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &amp;
-  <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
 <script>
   const savedPos = JSON.parse(localStorage.getItem("mapPos"));
-  const map = L.map('map', {zoomControl: false, attributionControl: false});
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {subdomains: 'abcd'}).addTo(map);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {subdomains: 'abcd', zIndex: 999}).addTo(map);
-
-  if (savedPos) {
-    map.setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-  } else {
-    fetch("slovakia_Regions_level_1.geojson")
-      .then(r => r.json())
-      .then(data => {
-        const geo = L.geoJSON(data, {style: {color: "#00bfff", weight: 1.5, fillOpacity: 0}}).addTo(map);
-        map.fitBounds(geo.getBounds().pad(window.innerWidth < 600 ? 0.05 : 0.25));
-      });
-  }
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    center: savedPos ? [savedPos.lng, savedPos.lat] : [19.7, 48.7],
+    zoom: savedPos ? savedPos.zoom : 7,
+    attributionControl: false
+  });
 
   let radarFrames = [];
   let currentIndex = 0;
   let playInterval = null;
   const timeBox = document.getElementById("timeBox");
-  let radarLayer = L.tileLayer('', {opacity: 0.8}).addTo(map);
+  let radarLayer = null;
 
   function formatDate(timestamp) {
     const d = new Date(timestamp * 1000);
@@ -134,7 +99,26 @@
 
   function showFrame(i) {
     if (!radarFrames[i]) return;
-    radarLayer.setUrl(`https://tilecache.rainviewer.com/v2/radar/${radarFrames[i].path}/256/{z}/{x}/{y}/4/1_1.png`);
+    const url = `https://tilecache.rainviewer.com/v2/radar/${radarFrames[i].path}/256/{z}/{x}/{y}/4/1_1.png`;
+
+    if (radarLayer) {
+      map.removeLayer('radar');
+      map.removeSource('radar');
+    }
+
+    map.addSource('radar', {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256
+    });
+
+    map.addLayer({
+      id: 'radar',
+      type: 'raster',
+      source: 'radar',
+      paint: {"raster-opacity": 0.8}
+    });
+
     timeBox.textContent = formatDate(radarFrames[i].time);
   }
 
@@ -148,7 +132,9 @@
       });
   }
 
-  loadRadar();
+  map.on('load', () => {
+    loadRadar();
+  });
 
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
@@ -177,8 +163,8 @@
   document.getElementById("refresh").onclick = () => loadRadar();
 
   map.on("moveend", () => {
-    const center = map.getCenter();
-    localStorage.setItem("mapPos", JSON.stringify({lat: center.lat, lng: center.lng, zoom: map.getZoom()}));
+    const c = map.getCenter();
+    localStorage.setItem("mapPos", JSON.stringify({lat: c.lat, lng: c.lng, zoom: map.getZoom()}));
     loadRadar();
   });
 </script>
