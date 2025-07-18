@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Radar zrážok – Slovensko + 80 km okolie</title>
+  <title>Radar zrážok – Slovensko + 80 km</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html, body, #map {
@@ -103,10 +103,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ✅ Slovensko + ~80 km na všetky strany
+  // ✅ Slovensko + 80 km na všetky strany
   const MAP_BOUNDS = [
-    [46.3, 15.0],  // juhozápad (80 km od SK)
-    [50.4, 23.5]   // severovýchod (80 km od SK)
+    [46.3, 15.0],  // juhozápad
+    [50.4, 23.5]   // severovýchod
   ];
 
   const map = L.map('map', {
@@ -115,16 +115,25 @@
     maxBounds: MAP_BOUNDS,
     maxBoundsViscosity: 1.0,
     noWrap: true,
-    minZoom: 7,  // ✅ odzoom len na SK + okolie
-    maxZoom: 12  // ✅ detailné priblíženie
+    minZoom: 7,
+    maxZoom: 11, // ✅ max 11 kvôli výkonu
+    keepBuffer: 0 // ✅ neukladá zbytočné dlaždice mimo obrazu
   }).fitBounds(MAP_BOUNDS);
 
   // ✅ Podkladová mapa
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 12,
+    maxZoom: 11,
     minZoom: 7,
-    noWrap: true
+    noWrap: true,
+    keepBuffer: 0
+  }).addTo(map);
+
+  // ✅ ŠTVOREC ukazujúci hranice zobrazenia zrážok
+  L.rectangle(MAP_BOUNDS, {
+    color: "#ff6600",
+    weight: 2,
+    fillOpacity: 0
   }).addTo(map);
 
   // ✅ Hranice Slovenska
@@ -171,7 +180,8 @@
             {
               opacity: 0,
               noWrap: true,
-              bounds: MAP_BOUNDS
+              bounds: MAP_BOUNDS,
+              keepBuffer: 0
             }
           ).addTo(map);
           radarLayers[i] = layer;
@@ -183,7 +193,6 @@
 
   loadRadar();
 
-  // ✅ Ovládanie
   document.getElementById("back").onclick = () => {
     currentIndex = (currentIndex - 1 + radarFrames.length) % radarFrames.length;
     fadeToFrame(currentIndex);
