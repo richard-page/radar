@@ -2,51 +2,45 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <title>Slovensko - Okresy</title>
+    <title>Slovensko - okresy (GEOJSON)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-        }
-        #map {
-            width: 100%;
-            height: 100%;
-        }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        #map { height: 100%; }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         // Inicializácia mapy
-        var map = L.map('map').setView([48.7, 19.7], 7);
+        const map = L.map('map').setView([48.7, 19.7], 7);
 
-        // Čierny podklad CartoDB Dark Matter
+        // Dark podklad (CartoDB)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap contributors & CartoDB',
+            attribution: '&copy; OpenStreetMap & CartoDB',
             subdomains: 'abcd',
             maxZoom: 18
         }).addTo(map);
 
-        // Načítanie lokálneho GeoJSON súboru
+        // Načítanie GeoJSON lokálneho súboru
         fetch('slovakia_Districts_level_2.geojson')
-            .then(response => response.json())
+            .then(resp => resp.json())
             .then(data => {
-                L.geoJSON(data, {
+                const geojsonLayer = L.geoJSON(data, {
                     style: {
-                        color: '#00ffff',       // obrys
+                        color: '#00ffff',
                         weight: 1,
-                        fillColor: '#007777',   // výplň
-                        fillOpacity: 0.4
+                        fillColor: '#008080',
+                        fillOpacity: 0.35
                     }
                 }).addTo(map);
+
+                // Automatické priblíženie na geojson
+                map.fitBounds(geojsonLayer.getBounds());
             })
             .catch(error => {
                 console.error("Chyba pri načítaní GeoJSON:", error);
