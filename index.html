@@ -16,10 +16,10 @@
     font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
     background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),linear-gradient(180deg,var(--bg1),var(--bg2));
     min-height:100vh;
-    /* scroll povolený */
+    display:flex;flex-direction:column; /* sticky footer layout */
     overflow-y:auto;
   }
-  .wrap{max-width:1180px;margin:auto;padding:28px 16px 64px}
+  .wrap{max-width:1180px;margin:auto;padding:28px 16px 40px;flex:1}
   header h1{margin:0;font-size:28px;text-align:center}
 
   .toolbar{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:start;margin:16px 0 10px}
@@ -78,6 +78,8 @@
   .badge.max{background:#ff4a4a;color:#fff}
   .badge.min{background:#ffcc3d;color:#001b3b}
   .histSub{color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
+
+  footer{padding:14px 10px;text-align:center;color:#cfe0ff;font-size:14px;border-top:1px solid rgba(255,255,255,.12)}
 </style>
 </head>
 <body>
@@ -159,13 +161,17 @@
     </section>
   </div>
 
+  <footer>
+    &copy; <span id="year"></span> Richard / Počasie
+  </footer>
+
 <script>
   const $=s=>document.querySelector(s);
   const fmt0=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${Math.round(v)}${u}`;
   const fmt1=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${(Math.round(v*10)/10).toFixed(1)}${u}`;
   const toF=c=>(c*9/5)+32;
 
-  const WMO={0:['Jasno','sun'],1:['Prevažne jasno','sun'],2:['Polojasno','cloud-sun'],3:['Zamračené','cloud'],45:['Hmla','fog'],48:['Mrznúca hmla','fog'],51:['Slabé mrholenie','drizzle'],53:['Mrholenie','drizzle'],55:['Silné mrholenie','drizzle'],61:['Slabý dážď','rain'],63:['Dážď','rain'],65:['Lejak','rain'],66:['Mrznúci dážď','sleet'],67:['Mrznúci dážď','sleet'],71:['Slabé sneženie','snow'],73:['Sneženie','snow'],75:['Silné sneženie','snow'],77:['Snehové zrná','snow'],80:['Prehánky','rain'],81:['Prehánky','rain'],82:['Silné prehánky','rain'],85:['Snehové prehánky','snow'],86:['Silné snehové prehánky','snow'],95:['Búrky','storm'],96:['Búrky s krúpami','storm'],99:['Silné búrky s krúpami','storm']};
+  const WMO={0:['Jasno','sun'],1:['Prevažne jasno','sun'],2:['Polojasno','cloud-sun'],3:['Zamračené','cloud'],45:['Hmla','fog'],48:['Mrznúca hmla','fog'],51:['Slabé mrholenie','drizzle'],53:['Mrholenie','drizzle'],55:['Silné mrholenie','drizzle'],61:['Slabý dážď','rain'],63:['Dážď','rain'],65:['Lejak','rain'],66:['Mrznúci dážď','sleet'],67:['Mrznúci dážď','sleet'],71:['Slabé sneženie','snow'],73:['Sneženie','snow'],75,['Silné sneženie','snow'],77:['Snehové zrná','snow'],80:['Prehánky','rain'],81:['Prehánky','rain'],82:['Silné prehánky','rain'],85:['Snehové prehánky','snow'],86:['Silné snehové prehánky','snow'],95:['Búrky','storm'],96:['Búrky s krúpami','storm'],99:['Silné búrky s krúpami','storm']};
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
   function wmoEmoji(code){const k=Number(code);if([0,1].includes(k))return'☀️';if([2].includes(k))return'⛅';if([3].includes(k))return'☁️';if([45,48].includes(k))return'🌫️';if([51,53,55].includes(k))return'🌦️';if([61,63,65,80,81,82].includes(k))return'🌧️';if([71,73,75,77,85,86].includes(k))return'❄️';if([95,96,99].includes(k))return'⛈️';return'🌤️'}
 
@@ -239,7 +245,7 @@
         plugins:{
           legend:{
             labels:{color:'#fff'},
-            onClick:(e,li,legend)=>{},  // zablokované vypínanie datasetu
+            onClick:(e,li,legend)=>{},
             onHover:(e)=>{ if(e && e.native) e.native.target.style.cursor='default'; }
           }
         }
@@ -314,6 +320,9 @@
     $('#hist-min').textContent=`${fmt1(min)}°${state.units==='c'?'C':'F'}`;
     $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
   }
+
+  // rok v pätičke – automaticky
+  document.getElementById('year').textContent = new Date().getFullYear();
 
   let timer;
   $('#q').addEventListener('input',e=>{
