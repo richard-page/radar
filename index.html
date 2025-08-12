@@ -11,9 +11,17 @@
 <style>
   :root{--bg1:#0f3a6e;--bg2:#0b2443;--card:#152c50;--stroke:#2a4573;--txt:#eaf2ff;--muted:#a9bad9;--brand:#57a6ff;--r:18px;--shadow:0 14px 40px rgba(0,0,0,.28)}
   *{box-sizing:border-box}
-  body{margin:0;color:var(--txt);font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),linear-gradient(180deg,var(--bg1),var(--bg2));min-height:100vh;overflow:hidden}
+  body{
+    margin:0;color:var(--txt);
+    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),linear-gradient(180deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    /* scroll povolený */
+    overflow-y:auto;
+  }
   .wrap{max-width:1180px;margin:auto;padding:28px 16px 64px}
   header h1{margin:0;font-size:28px;text-align:center}
+
   .toolbar{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:start;margin:16px 0 10px}
   .searchCol{display:flex;flex-direction:column;gap:10px}
   .search{width:100%;background:#223e6d;border:1px solid var(--stroke);color:#fff;border-radius:14px;padding:12px 14px;outline:none}
@@ -24,9 +32,11 @@
   .pill{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:14px;padding:12px 14px;font-weight:600;cursor:pointer}
   .pill:hover{filter:brightness(1.07)}
   .pill.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
+
   #suggestions{display:none;gap:8px}
   .sugg{background:#1b335e;border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;cursor:pointer}
   .sugg:hover{background:#223f70}
+
   .row{display:grid;grid-template-columns:1.05fr 1fr;gap:16px}
   @media (max-width:980px){.row{grid-template-columns:1fr}}
   .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
@@ -38,6 +48,7 @@
   .icon{width:78px;height:78px;display:flex;align-items:center;justify-content:center;font-size:58px;line-height:1}
   .chartWrap{height:260px}
   canvas{background:#162e59;border:1px solid var(--stroke);border-radius:14px}
+
   .min15Scroller{overflow-x:auto;display:flex;gap:12px;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch}
   .min15Scroller::-webkit-scrollbar{height:10px}
   .min15Scroller::-webkit-scrollbar-track{background:#11264a;border-radius:10px}
@@ -46,10 +57,12 @@
   .slot15 .em{font-size:20px}
   .slot15 .tt{font-weight:700}
   .slot15 .sub{color:#b7c9f2;font-size:12px}
+
   .centerCard .head{display:flex;flex-direction:column;align-items:center;text-align:center}
   .modelTabs{display:flex;gap:8px;align-items:center;justify-content:center}
   .tab{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:12px;padding:6px 10px;font-weight:600;cursor:pointer}
   .tab.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
+
   .modelsGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
   @media (max-width:1024px){.modelsGrid{grid-template-columns:repeat(5,1fr)}}
   @media (max-width:780px){.modelsGrid{grid-template-columns:repeat(3,1fr)}}
@@ -58,6 +71,7 @@
   .mcol .em{font-size:22px}
   .mcol .hi{font-weight:700}
   .mcol .lo{opacity:.85}
+
   .histCard .head{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
   .histRow{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
   .badge{display:inline-block;padding:6px 10px;border-radius:10px;font-weight:700}
@@ -90,6 +104,7 @@
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
             <div><span class="chip" id="uv">UV —</span></div>
+
             <div class="meta" style="margin-top:10px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -98,6 +113,7 @@
               <div>Východ slnka: <strong id="sunrise">—</strong></div>
               <div>Západ slnka: <strong id="sunset">—</strong></div>
             </div>
+
             <h3 style="margin:14px 0 6px">Dnešný súhrn</h3>
             <p id="summary" style="margin:0;color:#dbe6ff">—</p>
           </div>
@@ -223,7 +239,7 @@
         plugins:{
           legend:{
             labels:{color:'#fff'},
-            onClick:(e,li,legend)=>{},
+            onClick:(e,li,legend)=>{},  // zablokované vypínanie datasetu
             onHover:(e)=>{ if(e && e.native) e.native.target.style.cursor='default'; }
           }
         }
@@ -237,7 +253,8 @@
   function renderMin15(){
     const d=state.last;const box=$('#min15');box.innerHTML='';
     const start=new Date(d.current.time);const m=start.getMinutes();const add=(15-(m%15))%15;if(add>0)start.setMinutes(m+add,0,0);
-    for(let k=0;k<24;k++){const t=new Date(start.getTime()+k*15*60*1000);
+    for(let k=0;k<24;k++){
+      const t=new Date(start.getTime()+k*15*60*1000);
       const tmp=valueAt15min(d.hourly.time,d.hourly.temperature_2m,t);
       const prep=valueAt15min(d.hourly.time,d.hourly.precipitation,t);
       const code=codeAt15min(d.hourly.time,d.hourly.weather_code,t);
@@ -248,7 +265,8 @@
                     <div class="em">${wmoEmoji(code)}</div>
                     <div class="tt">${fmt0(tempDisplay,'°')}</div>
                     <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
-      box.appendChild(el)}
+      box.appendChild(el)
+    }
   }
 
   async function fetchModels(which){
